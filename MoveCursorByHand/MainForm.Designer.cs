@@ -74,6 +74,7 @@
             // 
             // availableCamerasListView
             // 
+            this.availableCamerasListView.Activation = System.Windows.Forms.ItemActivation.OneClick;
             this.availableCamerasListView.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.availableCamerasListView.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.availableCamerasListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
@@ -82,15 +83,20 @@
             this.availableCamerasListView.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F);
             this.availableCamerasListView.FullRowSelect = true;
             this.availableCamerasListView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
+            this.availableCamerasListView.HideSelection = false;
             this.availableCamerasListView.Location = new System.Drawing.Point(585, 73);
             this.availableCamerasListView.MouseLocation = new System.Drawing.Point(-1, -1);
             this.availableCamerasListView.MouseState = MaterialSkin.MouseState.OUT;
+            this.availableCamerasListView.MultiSelect = false;
             this.availableCamerasListView.Name = "availableCamerasListView";
             this.availableCamerasListView.OwnerDraw = true;
             this.availableCamerasListView.Size = new System.Drawing.Size(187, 137);
             this.availableCamerasListView.TabIndex = 3;
             this.availableCamerasListView.UseCompatibleStateImageBehavior = false;
             this.availableCamerasListView.View = System.Windows.Forms.View.Details;
+            this.availableCamerasListView.ItemChecked += new System.Windows.Forms.ItemCheckedEventHandler(this.availableCamerasListView_ItemChecked);
+            this.availableCamerasListView.ItemSelectionChanged += new System.Windows.Forms.ListViewItemSelectionChangedEventHandler(this.availableCamerasListView_ItemSelectionChanged);
+            this.availableCamerasListView.SelectedIndexChanged += new System.EventHandler(this.availableCamerasListView_SelectedIndexChanged);
             // 
             // columnHeader1
             // 
@@ -101,7 +107,7 @@
             // 
             this.rightRadioButton.AutoSize = true;
             this.rightRadioButton.Depth = 0;
-            this.rightRadioButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.rightRadioButton.Font = new System.Drawing.Font("Roboto", 10F);
             this.rightRadioButton.Location = new System.Drawing.Point(457, 407);
             this.rightRadioButton.Margin = new System.Windows.Forms.Padding(0);
             this.rightRadioButton.MouseLocation = new System.Drawing.Point(-1, -1);
@@ -119,7 +125,7 @@
             // 
             this.leftRadioButton.AutoSize = true;
             this.leftRadioButton.Depth = 0;
-            this.leftRadioButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F);
+            this.leftRadioButton.Font = new System.Drawing.Font("Roboto", 10F);
             this.leftRadioButton.Location = new System.Drawing.Point(457, 366);
             this.leftRadioButton.Margin = new System.Windows.Forms.Padding(0);
             this.leftRadioButton.MouseLocation = new System.Drawing.Point(-1, -1);
@@ -137,12 +143,12 @@
             // 
             this.materialLabel1.AutoSize = true;
             this.materialLabel1.Depth = 0;
-            this.materialLabel1.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
+            this.materialLabel1.Font = new System.Drawing.Font("Roboto", 11F);
             this.materialLabel1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.materialLabel1.Location = new System.Drawing.Point(581, 220);
             this.materialLabel1.MouseState = MaterialSkin.MouseState.HOVER;
             this.materialLabel1.Name = "materialLabel1";
-            this.materialLabel1.Size = new System.Drawing.Size(71, 18);
+            this.materialLabel1.Size = new System.Drawing.Size(73, 19);
             this.materialLabel1.TabIndex = 11;
             this.materialLabel1.Text = "Macro #1";
             // 
@@ -150,12 +156,12 @@
             // 
             this.materialLabel2.AutoSize = true;
             this.materialLabel2.Depth = 0;
-            this.materialLabel2.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
+            this.materialLabel2.Font = new System.Drawing.Font("Roboto", 11F);
             this.materialLabel2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.materialLabel2.Location = new System.Drawing.Point(581, 257);
             this.materialLabel2.MouseState = MaterialSkin.MouseState.HOVER;
             this.materialLabel2.Name = "materialLabel2";
-            this.materialLabel2.Size = new System.Drawing.Size(71, 18);
+            this.materialLabel2.Size = new System.Drawing.Size(73, 19);
             this.materialLabel2.TabIndex = 12;
             this.materialLabel2.Text = "Macro #2";
             // 
@@ -163,12 +169,12 @@
             // 
             this.materialLabel3.AutoSize = true;
             this.materialLabel3.Depth = 0;
-            this.materialLabel3.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F);
+            this.materialLabel3.Font = new System.Drawing.Font("Roboto", 11F);
             this.materialLabel3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
             this.materialLabel3.Location = new System.Drawing.Point(581, 292);
             this.materialLabel3.MouseState = MaterialSkin.MouseState.HOVER;
             this.materialLabel3.Name = "materialLabel3";
-            this.materialLabel3.Size = new System.Drawing.Size(71, 18);
+            this.materialLabel3.Size = new System.Drawing.Size(73, 19);
             this.materialLabel3.TabIndex = 13;
             this.materialLabel3.Text = "Macro #3";
             // 

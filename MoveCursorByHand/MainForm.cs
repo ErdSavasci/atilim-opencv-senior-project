@@ -99,18 +99,20 @@ namespace MoveCursorByHand
             materialSkinManager.ColorScheme = new ColorScheme(Primary.Blue700, Primary.Blue900, Primary.Blue500, Accent.Green700, TextShade.WHITE);            
 
             //Fills the listview elements with video capture device names
+            int cameraIndex = -1;
             Devices devices = new Devices();
             availableCamerasListView.Items.Clear();
             for (int i = 0; i < devices.Count(); i++)
             {                
                 availableCamerasListView.Items.Add(new ListViewItem(devices.ElementAt(i).Name));
+                cameraIndex = 0;             
             }
 
             captureImageBox.SizeMode = PictureBoxSizeMode.StretchImage;
             captureImageBox.VerticalScrollBar.Visible = false;
             captureImageBox.HorizontalScrollBar.Visible = false;
             captureImageBox.Width = (int)(Width / 1.81);
-            camera = new Camera(captureImageBox, devices.First());
+            camera = new Camera(captureImageBox, devices.First(), cameraIndex);
             camera.Start();
 
             //Initially check right radio button
@@ -203,6 +205,33 @@ namespace MoveCursorByHand
         private void metroLink_Click(object sender, EventArgs e)
         {
             MetroMessageBox.Show(this, "When you show your hand with 5 fingers open, then the application will be minimized and the mouse control with hand gestures will be started.", "Help Page", MessageBoxButtons.OK, MessageBoxIcon.Information, (int)(Height / 1.5));
+        }
+
+        private void availableCamerasListView_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void availableCamerasListView_ItemChecked(object sender, ItemCheckedEventArgs e)
+        {
+           
+        }
+
+        private void availableCamerasListView_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
+        {
+            if(camera.getActiveDeviceIndex() != e.ItemIndex)
+            {
+                if (camera.isActive())
+                {
+                    camera.Stop();
+                    camera.ReleaseResources();
+                }
+
+                Devices devices = new Devices();
+                camera = new Camera(captureImageBox, devices.ElementAt(e.ItemIndex), e.ItemIndex);
+                camera.setFirstFrameCaptured(true);
+                SetCamera(camera);
+            }
         }
     }
 }

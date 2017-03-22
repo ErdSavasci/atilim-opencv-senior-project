@@ -264,6 +264,16 @@ namespace MoveCursorByHand.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap no_signal {
+            get {
+                object obj = ResourceManager.GetObject("no_signal", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot;?&gt;
         ///&lt;opencv_storage&gt;
         ///&lt;!-- Automatically converted from ./contract_palm4/haarcascade, window size = 20x20 --&gt;

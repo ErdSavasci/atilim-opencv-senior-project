@@ -131,6 +131,7 @@
   <ItemGroup />
   <ItemGroup>
     <Content Include="opencv_ffmpeg310_64.dll" />
+    <None Include="Resources\no_signal.jpg" />
     <None Include="Resources\cascade.xml" />
     <None Include="Resources\hand_2.xml" />
     <None Include="Resources\palm.xml" />
