@@ -39,10 +39,12 @@
             this.materialLabel2 = new MaterialSkin.Controls.MaterialLabel();
             this.materialLabel3 = new MaterialSkin.Controls.MaterialLabel();
             this.macroComboBox3 = new MetroFramework.Controls.MetroComboBox();
+            this.metroLink = new MetroFramework.Controls.MetroLink();
+            this.backgroundPictureBox = new System.Windows.Forms.PictureBox();
             this.macroComboBox2 = new MetroFramework.Controls.MetroComboBox();
             this.macroComboBox = new MetroFramework.Controls.MetroComboBox();
-            this.metroLink = new MetroFramework.Controls.MetroLink();
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
             // exitButton
@@ -189,32 +191,9 @@
             this.macroComboBox3.TabIndex = 10;
             this.macroComboBox3.UseSelectable = true;
             // 
-            // macroComboBox2
-            // 
-            this.macroComboBox2.FormattingEnabled = true;
-            this.macroComboBox2.ItemHeight = 23;
-            this.macroComboBox2.Location = new System.Drawing.Point(660, 252);
-            this.macroComboBox2.Name = "macroComboBox2";
-            this.macroComboBox2.PromptText = "Select a key..";
-            this.macroComboBox2.Size = new System.Drawing.Size(112, 29);
-            this.macroComboBox2.TabIndex = 9;
-            this.macroComboBox2.UseSelectable = true;
-            // 
-            // macroComboBox
-            // 
-            this.macroComboBox.FormattingEnabled = true;
-            this.macroComboBox.ImeMode = System.Windows.Forms.ImeMode.NoControl;
-            this.macroComboBox.ItemHeight = 23;
-            this.macroComboBox.Location = new System.Drawing.Point(660, 216);
-            this.macroComboBox.Name = "macroComboBox";
-            this.macroComboBox.PromptText = "Select a key..";
-            this.macroComboBox.Size = new System.Drawing.Size(112, 29);
-            this.macroComboBox.TabIndex = 8;
-            this.macroComboBox.Theme = MetroFramework.MetroThemeStyle.Light;
-            this.macroComboBox.UseSelectable = true;
-            // 
             // metroLink
             // 
+            this.metroLink.BackColor = System.Drawing.SystemColors.Control;
             this.metroLink.DisplayFocus = true;
             this.metroLink.Location = new System.Drawing.Point(722, 366);
             this.metroLink.Name = "metroLink";
@@ -227,23 +206,54 @@
             this.metroLink.UseStyleColors = true;
             this.metroLink.Click += new System.EventHandler(this.metroLink_Click);
             // 
+            // backgroundPictureBox
+            // 
+            this.backgroundPictureBox.Location = new System.Drawing.Point(450, 73);
+            this.backgroundPictureBox.Name = "backgroundPictureBox";
+            this.backgroundPictureBox.Size = new System.Drawing.Size(322, 376);
+            this.backgroundPictureBox.TabIndex = 14;
+            this.backgroundPictureBox.TabStop = false;
+            // 
+            // macroComboBox2
+            // 
+            this.macroComboBox2.FormattingEnabled = true;
+            this.macroComboBox2.ItemHeight = 23;
+            this.macroComboBox2.Location = new System.Drawing.Point(660, 252);
+            this.macroComboBox2.Name = "macroComboBox2";
+            this.macroComboBox2.PromptText = "Select a key..";
+            this.macroComboBox2.Size = new System.Drawing.Size(112, 29);
+            this.macroComboBox2.TabIndex = 15;
+            this.macroComboBox2.UseSelectable = true;
+            // 
+            // macroComboBox
+            // 
+            this.macroComboBox.FormattingEnabled = true;
+            this.macroComboBox.ItemHeight = 23;
+            this.macroComboBox.Location = new System.Drawing.Point(660, 216);
+            this.macroComboBox.Name = "macroComboBox";
+            this.macroComboBox.PromptText = "Select a key..";
+            this.macroComboBox.Size = new System.Drawing.Size(112, 29);
+            this.macroComboBox.TabIndex = 16;
+            this.macroComboBox.UseSelectable = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 461);
+            this.Controls.Add(this.macroComboBox);
+            this.Controls.Add(this.macroComboBox2);
             this.Controls.Add(this.materialLabel3);
             this.Controls.Add(this.materialLabel2);
             this.Controls.Add(this.materialLabel1);
             this.Controls.Add(this.macroComboBox3);
-            this.Controls.Add(this.macroComboBox2);
-            this.Controls.Add(this.macroComboBox);
             this.Controls.Add(this.metroLink);
             this.Controls.Add(this.leftRadioButton);
             this.Controls.Add(this.rightRadioButton);
             this.Controls.Add(this.availableCamerasListView);
             this.Controls.Add(this.captureImageBox);
             this.Controls.Add(this.exitButton);
+            this.Controls.Add(this.backgroundPictureBox);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "HoverCursor";
@@ -254,6 +264,7 @@
             this.VisibleChanged += new System.EventHandler(this.MainForm_VisibleChanged);
             this.Resize += new System.EventHandler(this.MainForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -268,12 +279,13 @@
         private MaterialSkin.Controls.MaterialRadioButton rightRadioButton;
         private MaterialSkin.Controls.MaterialRadioButton leftRadioButton;
         private MetroFramework.Controls.MetroLink metroLink;
-        private MetroFramework.Controls.MetroComboBox macroComboBox;
-        private MetroFramework.Controls.MetroComboBox macroComboBox2;
         private MetroFramework.Controls.MetroComboBox macroComboBox3;
         private MaterialSkin.Controls.MaterialLabel materialLabel1;
         private MaterialSkin.Controls.MaterialLabel materialLabel2;
         private MaterialSkin.Controls.MaterialLabel materialLabel3;
+        private System.Windows.Forms.PictureBox backgroundPictureBox;
+        private MetroFramework.Controls.MetroComboBox macroComboBox2;
+        private MetroFramework.Controls.MetroComboBox macroComboBox;
     }
 }
 

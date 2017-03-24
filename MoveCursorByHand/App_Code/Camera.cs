@@ -19,6 +19,8 @@ using System.Diagnostics;
 using Emgu.CV.VideoSurveillance;
 using System.Drawing.Imaging;
 using Emgu.CV.BgSegm;
+using System.IO;
+using System.Reflection;
 
 namespace MoveCursorByHand.App_Code
 {
@@ -46,13 +48,12 @@ namespace MoveCursorByHand.App_Code
         private bool activate = false, isActivated = false;
         private bool leftHandPos = false;
         private int x1 = -1, x2 = -1, y1 = -1, y2 = -1;
-        private Mat roi_hist;
-        private Mat hsv_roi;
-        private Mat mask;
-        private Mat backProject;
-        private Mat hsv;
-        private bool canStartCamera = false;      
-        private Rectangle trackWindow;
+        private Mat camShiftHist;
+        private Mat camShiftMask;
+        private Mat hsvCroppedFrame;
+        private Mat camShiftBackProject;
+        private bool canStartCamera = false;
+        private Rectangle camShiftTrackWindow;
         private int handPalmClosedCount = 0;
         private int count_defects = 0;
         private List<Point> fingertipCoordinates;
@@ -66,7 +67,10 @@ namespace MoveCursorByHand.App_Code
         private bool firstFrameCaptured = true;
         private BackgroundSubtractorMOG2 bgSubtractor;
         private bool thumbFound = false, indexFound = false;
+        private Point handPoint;
+        private Size handSize;
         private int deviceIndex = 0;
+        private int handWidth, handHeight, handLocX, handLocY;
         #endregion
 
         public Camera(ImageBox captureImageBox, DsDevice systemCamera, int cameraIndex)
@@ -75,8 +79,8 @@ namespace MoveCursorByHand.App_Code
             CvInvoke.UseOpenCL = true;
 
             deviceIndex = cameraIndex;
-            
-            if(cameraIndex != -1)
+
+            if (cameraIndex != -1)
             {
                 canStartCamera = true;
                 try
@@ -124,13 +128,16 @@ namespace MoveCursorByHand.App_Code
                     detectHandPalmClosedFrame = new Mat();
                     maskedCroppedFrame = new Mat();
 
-                    roi_hist = new Mat();
-                    hsv_roi = new Mat();
-                    mask = new Mat();
-                    backProject = new Mat();
-                    hsv = new Mat();
-                    trackWindow = new Rectangle();
+                    camShiftBackProject = new Mat();
+                    camShiftHist = new Mat();
+                    camShiftMask = new Mat();
+                    hsvCroppedFrame = new Mat();
                     bgSubtractor = new BackgroundSubtractorMOG2(500, 5, false);
+
+                    handWidth = -1;
+                    handHeight = -1;
+                    handLocX = -1;
+                    handLocY = -1;
 
                     fingertipCoordinates = new List<Point>();
                     fingertipNames = new List<Finger>();
@@ -138,15 +145,29 @@ namespace MoveCursorByHand.App_Code
                     //Flips the video capture device in horizontal axis
                     capture.FlipHorizontal = true;
 
+                    //Get Resources Path of Project
                     string system = AppDomain.CurrentDomain.BaseDirectory.Substring(0, AppDomain.CurrentDomain.BaseDirectory.LastIndexOf("\\"));
                     system = system.Substring(0, system.LastIndexOf("\\"));
                     system = system.Substring(0, system.LastIndexOf("\\"));
-                    haarCascade = new CascadeClassifier(system + "\\Resources\\aGest.xml");
+
+                    //Get HaarCascade XML File
+                    Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MoveCursorByHand.aGest.xml");
+                    StreamReader streamReader = new StreamReader(stream);
+                    string aGestContent = streamReader.ReadToEnd();
+                    stream.Close();
+                    streamReader.Close();
+                    string xmlCascadeFilePath = Environment.GetFolderPath(Environment.SpecialFolder.Windows) + @"\Temp" + @"\aGest.xml";
+                    File.Create(xmlCascadeFilePath).Dispose();
+                    StreamWriter streamWriter = new StreamWriter(xmlCascadeFilePath);
+                    streamWriter.Write(aGestContent);
+                    streamWriter.Close();
+
+                    haarCascade = new CascadeClassifier(xmlCascadeFilePath);
                 }
                 catch (Exception ex)
                 {
                     canStartCamera = false;
-                    MessageBox.Show("An Error Occurred While Opening Camera");                    
+                    Console.WriteLine(ex.Message);
                 }
             }
             else
@@ -218,6 +239,7 @@ namespace MoveCursorByHand.App_Code
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 return null;
             }
         }
@@ -547,7 +569,6 @@ namespace MoveCursorByHand.App_Code
 
             try
             {
-
                 milliSeconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
 
                 fingertipCoordinates.Clear();
@@ -581,9 +602,39 @@ namespace MoveCursorByHand.App_Code
                             croppedFrame = new Mat(frame, new Rectangle(0, 0, frame.Width, frame.Height));
                         }
                     }
+                    
+                    if (isActivated && firstFrameCaptured)
+                    {
+                        if (handWidth != -1 && handHeight != -1 && handLocX != -1 && handLocY != -1)
+                        {
+                            CvInvoke.CvtColor(croppedFrame, hsvCroppedFrame, ColorConversion.Bgr2Hsv);
+                            CvInvoke.InRange(hsvCroppedFrame, new VectorOfInt(new int[] { 0, 60, 32 }), new VectorOfInt(new int[] { 180, 255, 255 }), camShiftMask);
+                            CvInvoke.CalcHist(new VectorOfMat(new Mat[] { hsvCroppedFrame }), new int[] { 0 }, camShiftMask, camShiftHist, new int[] { 180 }, new float[] { 0, 180 }, false);
+                            CvInvoke.Normalize(camShiftHist, camShiftHist, 0, 255, NormType.MinMax);
+
+                            handLocX = handLocX + (frame.Width) - (frame.Width / 26) - (frame.Width / 2);
+                            handLocY = handLocY + (frame.Width / 26);
+
+                            handPoint = new Point(handLocX, handLocY);
+                            handSize = new Size(handWidth, handHeight);
+                            camShiftTrackWindow = new Rectangle(handPoint, handSize);
+                        }
+                        firstFrameCaptured = false;
+                    }
+                    else if (isActivated)
+                    {                        
+                        if (handWidth != -1 && handHeight != -1 && handLocX != -1 && handLocY != -1
+                            && handSize.Width != -1 && handSize.Height != -1 && handPoint.X != -1 && handPoint.Y != -1)
+                        {
+                            CvInvoke.CvtColor(croppedFrame, hsvCroppedFrame, ColorConversion.Bgr2Hsv);
+                            CvInvoke.CalcBackProject(new VectorOfMat(new Mat[] { hsvCroppedFrame }), new int[] { 0 }, camShiftHist, camShiftBackProject, new float[] { 0, 180 }, 1);                           
+                            CvInvoke.CamShift(camShiftBackProject, ref camShiftTrackWindow, new MCvTermCriteria(10, 1));
+                            CvInvoke.Rectangle(croppedFrame, camShiftTrackWindow, new MCvScalar(255, 0, 0), 5);
+                        }
+                    }
 
                     bgSubtractor.Apply(croppedFrame, maskedCroppedFrame);
-                    CvInvoke.MedianBlur(maskedCroppedFrame, maskedCroppedFrame, 5);                    
+                    CvInvoke.MedianBlur(maskedCroppedFrame, maskedCroppedFrame, 5);
 
                     CvInvoke.CvtColor(croppedFrame, filteredCroppedFrame, ColorConversion.Bgr2Gray);
 
@@ -623,7 +674,7 @@ namespace MoveCursorByHand.App_Code
 
                     CvInvoke.GaussianBlur(filteredCroppedFrame, filteredCroppedFrame, new Size(35, 35), 0);
                     CvInvoke.Threshold(filteredCroppedFrame, filteredCroppedFrame, 75, 255, ThresholdType.BinaryInv | ThresholdType.Otsu);
-                    //CvInvoke.AdaptiveThreshold(filteredCroppedFrame, filteredCroppedFrame, 255, AdaptiveThresholdType.GaussianC, ThresholdType.Binary, 11, 2);
+                    //CvInvoke.AdaptiveThreshold(filteredCroppedFrame, filteredCroppedFrame, 127, AdaptiveThresholdType.GaussianC, ThresholdType.BinaryInv, 7, 2);
 
                     VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
                     Mat hierarchy = new Mat();
@@ -641,6 +692,8 @@ namespace MoveCursorByHand.App_Code
 
                     VectorOfPoint maxResult = new VectorOfPoint(contours[maxAreaIndex].ToArray());
                     Rectangle boundingRect = CvInvoke.BoundingRectangle(maxResult);
+                    handWidth = boundingRect.Width;
+                    handHeight = boundingRect.Height;
                     CvInvoke.Rectangle(croppedFrame, boundingRect, new MCvScalar(255, 255, 255), 0);
                     VectorOfInt hullResult = new VectorOfInt();
                     if (leftHandPos)
@@ -678,6 +731,8 @@ namespace MoveCursorByHand.App_Code
                             CvInvoke.Circle(croppedFrame, centerPoint, 1, new MCvScalar(0, 0, 255), 10);
                             CvInvoke.Circle(croppedFrame, centerPoint, boundingRect.Width / 4, new MCvScalar(0, 255, 0), 3);
                         }
+                        handLocX = centerPoint.X;
+                        handLocY = centerPoint.Y;
                     }
                     //----------------------------------------------------------------------------------------------                
 
@@ -773,17 +828,18 @@ namespace MoveCursorByHand.App_Code
                         timeDelay = 0;
                     }
 
-                    if (timeDelay >= 55) //If hand is hold for 5 seconds or more
+                    if (timeDelay >= 5) //If hand is hold for 5 seconds or more
                     {
                         if (!isActivated && activate)
                         {
-                            ActivateMouseControl();
                             isActivated = true;
+                            firstFrameCaptured = true;
+                            ActivateMouseControl();
                         }
                         else if (isActivated && !activate)
                         {
-                            DeactivateMouseControl();
                             isActivated = false;
+                            DeactivateMouseControl();
                             x1 = -1;
                             x2 = -1;
                             y1 = -1;
@@ -797,6 +853,8 @@ namespace MoveCursorByHand.App_Code
 
                     captureImageBox.Image = frame;
 
+                    Console.WriteLine("Detected FingerTip Number: " + count_defects);
+
                     milliSeconds2 = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     milliSecondsDiff = milliSeconds2 - milliSeconds;
 
@@ -807,18 +865,20 @@ namespace MoveCursorByHand.App_Code
 
                     frameRate = Math.Abs(1000 / milliSecondsDiff);
 
-                    if (!firstFrameCaptured)
-                        Thread.Sleep((int)(1000.0 / frameRate));
-                    else
+                    if (!isActivated && firstFrameCaptured)
                     {
                         firstFrameCaptured = false;
                         Thread.Sleep(100);
                     }
+                    else
+                    {
+                        Thread.Sleep((int)(1000.0 / frameRate));
+                    }
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-
+                Console.WriteLine(ex.Message);
             }
         }
 
@@ -886,7 +946,7 @@ namespace MoveCursorByHand.App_Code
 
         public void Start()
         {
-            if(capture != null && canStartCamera)
+            if (capture != null && canStartCamera)
             {
                 captureInProgress = true;
                 capture.Start();

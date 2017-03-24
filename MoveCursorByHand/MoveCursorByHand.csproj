@@ -130,7 +130,10 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <EmbeddedResource Include="aGest.xml" />
     <Content Include="opencv_ffmpeg310_64.dll" />
+    <None Include="Resources\background3.jpg" />
+    <None Include="Resources\background.png" />
     <None Include="Resources\no_signal.jpg" />
     <None Include="Resources\cascade.xml" />
     <None Include="Resources\hand_2.xml" />

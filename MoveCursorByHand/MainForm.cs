@@ -40,7 +40,15 @@ namespace MoveCursorByHand
         private void MainForm_Load(object sender, EventArgs e)
         {
             captureImageBox.Tag = "Main_Capture";
-            context = SynchronizationContext.Current;                                
+            context = SynchronizationContext.Current;
+
+            backgroundPictureBox.Image = Properties.Resources.background2;
+            backgroundPictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
+            backgroundPictureBox.Location = new Point(0, 60);
+            backgroundPictureBox.Size = new Size(Width, Height - 60);
+
+            metroLink.BackgroundImage = Properties.Resources.background2;
+            availableCamerasListView.BackgroundImage = Properties.Resources.background2;
 
             macroComboBox.Items.Add("ESC Key");
             macroComboBox.Items.Add("Shift Key");
