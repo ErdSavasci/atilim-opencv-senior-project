@@ -1,0 +1,4 @@
+﻿CvInvoke.InRange(hsvCroppedFrame, new VectorOfDouble(new double[] { 119, 10, 52 }), new VectorOfDouble(new double[] { 160, 40, 130 }), hsvCroppedFrame);
+CvInvoke.MedianBlur(hsvCroppedFrame, hsvCroppedFrame, 5);
+Mat kernel = CvInvoke.GetStructuringElement(ElementShape.Ellipse, new Size(11, 11), new Point(5, 5));
+CvInvoke.Dilate(hsvCroppedFrame, hsvCroppedFrame, kernel, new Point(-1, -1), 1, BorderType.Default, new MCvScalar());

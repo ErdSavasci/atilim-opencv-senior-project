@@ -19,9 +19,10 @@ namespace MoveCursorByHand
 {
     public partial class MainForm : MaterialForm
     {
-        private static MainForm mainFormInstance;
-        private Camera camera;
-        private SynchronizationContext context;  
+        private static MainForm mainFormInstance = null;
+        private Camera camera = null;
+        private SynchronizationContext context = null;
+        private bool itemSelectedManually = false;
 
         public MainForm()
         {
@@ -41,14 +42,28 @@ namespace MoveCursorByHand
         {
             captureImageBox.Tag = "Main_Capture";
             context = SynchronizationContext.Current;
+            loadingGIFPicureBox.Visible = false;
+            loadingGIFPicureBox.Size = new Size(captureImageBox.Width, captureImageBox.Height);
+            loadingGIFPicureBox.Location = new Point(captureImageBox.Location.X, captureImageBox.Location.Y);
 
-            backgroundPictureBox.Image = Properties.Resources.background2;
+            backgroundPictureBox.Image = Properties.Resources.background4;
             backgroundPictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
             backgroundPictureBox.Location = new Point(0, 60);
             backgroundPictureBox.Size = new Size(Width, Height - 60);
 
-            metroLink.BackgroundImage = Properties.Resources.background2;
-            availableCamerasListView.BackgroundImage = Properties.Resources.background2;
+            //metroLink.BackgroundImage = Properties.Resources.background4;
+            //availableCamerasListView.BackgroundImage = Properties.Resources.background4;
+
+            SetStyle(ControlStyles.SupportsTransparentBackColor, true);
+
+            leftRadioButton.BackgroundImage = Properties.Resources.background4;
+
+            MakeTransparent(label1);
+            MakeTransparent(label2);
+            MakeTransparent(label3);
+            MakeTransparent(metroLink);
+            MakeTransparent(availableCamerasListView);
+            MakeTransparent(loadingGIFPicureBox);
 
             macroComboBox.Items.Add("ESC Key");
             macroComboBox.Items.Add("Shift Key");
@@ -127,6 +142,36 @@ namespace MoveCursorByHand
             rightRadioButton.Checked = true;
         }
 
+        private void MakeTransparent(Control control)
+        {
+            Thread t = new Thread(() =>
+            {
+                Action action = () =>
+                {
+                    control.Visible = false;
+
+                    control.Refresh();
+                    Application.DoEvents();
+
+                    Rectangle screenRectangle = RectangleToScreen(ClientRectangle);
+                    int titleHeight = screenRectangle.Top - Top;
+                    int right = screenRectangle.Left - Left;
+
+                    Bitmap bitmap = new Bitmap(Width, Height);
+                    DrawToBitmap(bitmap, new Rectangle(0, 0, Width, Height));
+                    Bitmap bitmapImage = new Bitmap(bitmap);
+                    bitmap = bitmapImage.Clone(new Rectangle(control.Location.X + right, control.Location.Y, control.Width, control.Height), bitmapImage.PixelFormat);
+
+                    control.BackgroundImage = bitmap;
+
+                    control.Visible = true;
+                };
+                control.Invoke(action);
+            });
+            if(control.Width > 0 && control.Height > 0)
+                t.Start();
+        }
+
         public void SetCamera(Camera camera)
         {
             this.camera = camera;
@@ -161,7 +206,16 @@ namespace MoveCursorByHand
 
         private void MainForm_Resize(object sender, EventArgs e)
         {
-            if(WindowState == FormWindowState.Minimized)
+            backgroundPictureBox.Size = new Size(Width, Height - 60);
+
+            MakeTransparent(label1);
+            MakeTransparent(label2);
+            MakeTransparent(label3);
+            MakeTransparent(metroLink);
+            MakeTransparent(availableCamerasListView);
+            MakeTransparent(loadingGIFPicureBox);
+
+            if (WindowState == FormWindowState.Minimized)
             {
                 if (camera.isActive())
                 {
@@ -217,29 +271,56 @@ namespace MoveCursorByHand
 
         private void availableCamerasListView_SelectedIndexChanged(object sender, EventArgs e)
         {
-            
+            Console.WriteLine("SelectedIndexChanged");
         }
 
         private void availableCamerasListView_ItemChecked(object sender, ItemCheckedEventArgs e)
         {
-           
+            Console.WriteLine("ItemChecked");
         }
 
         private void availableCamerasListView_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
         {
-            if(camera.getActiveDeviceIndex() != e.ItemIndex)
-            {
-                if (camera.isActive())
-                {
-                    camera.Stop();
-                    camera.ReleaseResources();
-                }
+            if(camera.getActiveDeviceIndex() == e.ItemIndex && !itemSelectedManually)
+            {               
+                loadingGIFPicureBox.Image = Properties.Resources.loading;
+                loadingGIFPicureBox.Tag = e.ItemIndex;
+                loadingGIFPicureBox.Visible = true;
+                timer1.Start();
+                itemSelectedManually = true;
+            }           
+        }
 
-                Devices devices = new Devices();
-                camera = new Camera(captureImageBox, devices.ElementAt(e.ItemIndex), e.ItemIndex);
-                camera.setFirstFrameCaptured(true);
-                SetCamera(camera);
+        public void clearLoadingAnimationPictureBox()
+        {
+            Thread clearThread = new Thread(() =>
+            {
+                Action clearImageAction = () => {
+                    loadingGIFPicureBox.Visible = false;
+                    loadingGIFPicureBox.Image = null;                   
+                };
+                loadingGIFPicureBox.Invoke(clearImageAction);
+            });
+            clearThread.Start();
+            itemSelectedManually = false;
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            timer1.Stop();
+            if (camera.isActive())
+            {
+                camera.Stop();
+                camera.ReleaseResources();
+                camera = null;
             }
+
+            Devices devices = new Devices();
+            camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag);
+            camera.setFirstFrameCaptured(true);
+            SetCamera(camera);
+
+            itemSelectedManually = true;            
         }
     }
 }

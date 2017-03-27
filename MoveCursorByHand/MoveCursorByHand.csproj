@@ -130,7 +130,16 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <None Include="Resources\loading.gif" />
+    <None Include="Resources\loading_rotated.gif" />
+    <None Include="Resources\optionsPlate3.png" />
+    <None Include="Resources\optionsPlate2.png" />
+    <None Include="Resources\options_plate.png" />
+    <None Include="Resources\backgroundPart1.png" />
+    <None Include="Resources\background4.png" />
+    <None Include="Resources\banner-67.jpeg" />
     <EmbeddedResource Include="aGest.xml" />
+    <Content Include="App_Code\BackupCodes.txt" />
     <Content Include="opencv_ffmpeg310_64.dll" />
     <None Include="Resources\background3.jpg" />
     <None Include="Resources\background.png" />
