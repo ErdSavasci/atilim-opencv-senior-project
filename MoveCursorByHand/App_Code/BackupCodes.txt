@@ -2,3 +2,85 @@
 CvInvoke.MedianBlur(hsvCroppedFrame, hsvCroppedFrame, 5);
 Mat kernel = CvInvoke.GetStructuringElement(ElementShape.Ellipse, new Size(11, 11), new Point(5, 5));
 CvInvoke.Dilate(hsvCroppedFrame, hsvCroppedFrame, kernel, new Point(-1, -1), 1, BorderType.Default, new MCvScalar());
+
+
+SIFT sift = new SIFT();
+VectorOfKeyPoint vKP1 = new VectorOfKeyPoint();
+VectorOfKeyPoint vKP2 = new VectorOfKeyPoint();
+VectorOfVectorOfPoint des1 = new VectorOfVectorOfPoint();
+VectorOfVectorOfPoint des2 = new VectorOfVectorOfPoint();
+sift.DetectAndCompute(filteredCroppedFrame, null, vKP1, des1, false);
+sift.DetectAndCompute(filteredCroppedFrame, null, vKP2, des2, false);
+FlannBasedMatcher flann = new FlannBasedMatcher();
+flann.KnnMatch(des1, des2, 2, null);
+
+
+Mat newFilteredCroppedFrame = new Mat();
+                    CvInvoke.CvtColor(croppedFrame, newFilteredCroppedFrame, ColorConversion.Bgr2Gray);                   
+                    if (firstFrameCaptured)
+                    {
+                        matcherThread = new Thread(() =>
+                        {
+                            Image<Gray, byte> grayScaleHandImage = new Image<Gray, byte>(Properties.Resources.grayscale_hand);
+                            UMat modelImageUMat = grayScaleHandImage.Mat.GetUMat(AccessType.Read);                                                        
+                            UMat observedImageUMat = newFilteredCroppedFrame.GetUMat(AccessType.Read);
+                            KAZE sift = new KAZE();
+                            VectorOfKeyPoint vKPModelImage = new VectorOfKeyPoint();
+                            VectorOfKeyPoint vKPObservedImage = new VectorOfKeyPoint();
+                            Mat desModelImage = new Mat();
+                            Mat desObservedImage = new Mat();
+                            sift.DetectAndCompute(modelImageUMat, null, vKPModelImage, desModelImage, false);
+                            sift.DetectAndCompute(observedImageUMat, null, vKPObservedImage, desObservedImage, false);
+                            KdTreeIndexParams index_params = new KdTreeIndexParams();
+                            SearchParams search_params = new SearchParams();
+                            DescriptorMatcher flann = new FlannBasedMatcher(index_params, search_params);
+                            VectorOfVectorOfDMatch matches = new VectorOfVectorOfDMatch();
+                            flann.Add(desModelImage);
+                            flann.KnnMatch(desObservedImage, matches, 2, null);
+                            Mat mask = new Mat(matches.Size, 1, DepthType.Cv8U, 1); ;
+                            mask.SetTo(new MCvScalar(255));
+                            Features2DToolbox.VoteForUniqueness(matches, 0.80, mask);
+                            int nonZeroCount = CvInvoke.CountNonZero(mask);
+                        });
+                        matcherThread.Start();
+                    }
+                    if(matcherThread != null && !matcherThread.IsAlive)
+                    {
+                        matcherThread = new Thread(() =>
+                        {
+                            Image<Gray, byte> grayScaleHandImage = new Image<Gray, byte>(Properties.Resources.grayscale_hand);
+                            UMat modelImageUMat = grayScaleHandImage.Mat.GetUMat(AccessType.Read);
+                            UMat observedImageUMat = newFilteredCroppedFrame.GetUMat(AccessType.Read);
+                            KAZE sift = new KAZE();
+                            VectorOfKeyPoint vKPModelImage = new VectorOfKeyPoint();
+                            VectorOfKeyPoint vKPObservedImage = new VectorOfKeyPoint();
+                            Mat desModelImage = new Mat();
+                            Mat desObservedImage = new Mat();
+                            sift.DetectAndCompute(modelImageUMat, null, vKPModelImage, desModelImage, false);
+                            sift.DetectAndCompute(observedImageUMat, null, vKPObservedImage, desObservedImage, false);
+                            KdTreeIndexParams index_params = new KdTreeIndexParams();
+                            SearchParams search_params = new SearchParams();
+                            DescriptorMatcher flann = new FlannBasedMatcher(index_params, search_params);
+                            VectorOfVectorOfDMatch matches = new VectorOfVectorOfDMatch();
+                            flann.Add(desModelImage);
+                            flann.KnnMatch(desObservedImage, matches, 2, null);
+                            Mat mask = new Mat(matches.Size, 1, DepthType.Cv8U, 1); ;
+                            mask.SetTo(new MCvScalar(255));
+                            Features2DToolbox.VoteForUniqueness(matches, 0.80, mask);
+                            int nonZeroCount = CvInvoke.CountNonZero(mask);
+                            if (nonZeroCount >= 4)
+                            {
+                                nonZeroCount = Features2DToolbox.VoteForSizeAndOrientation(vKPModelImage, vKPObservedImage, matches, mask, 1.5, 20);
+                                if(nonZeroCount >= 4)
+                                {
+                                    Mat homograpgy = Features2DToolbox.GetHomographyMatrixFromMatchedFeatures(vKPModelImage, vKPObservedImage, matches, mask, 2);
+                                    Console.WriteLine("NonZero Count: " + nonZeroCount);
+                                    Console.WriteLine("Matches Size: " + matches.Size);
+                                    Mat result = new Mat();
+                                    Features2DToolbox.DrawMatches(modelImageUMat, vKPModelImage, observedImageUMat, vKPObservedImage, matches, croppedFrame, new MCvScalar(0, 255, 0), new MCvScalar(0, 255, 0), mask);
+                                    captureImageBox.Image = croppedFrame;
+                                }
+                            }
+                        });
+                        matcherThread.Start();
+                    }

@@ -41,9 +41,13 @@
             // returnPictureBox
             // 
             this.returnPictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.returnPictureBox.Location = new System.Drawing.Point(269, 26);
+            this.returnPictureBox.BackColor = System.Drawing.SystemColors.Control;
+            this.returnPictureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.returnPictureBox.Image = global::MoveCursorByHand.Properties.Resources.maximize;
+            this.returnPictureBox.Location = new System.Drawing.Point(270, 26);
             this.returnPictureBox.Name = "returnPictureBox";
             this.returnPictureBox.Size = new System.Drawing.Size(50, 37);
+            this.returnPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.returnPictureBox.TabIndex = 0;
             this.returnPictureBox.TabStop = false;
             this.returnPictureBox.Click += new System.EventHandler(this.returnPictureBox_Click);

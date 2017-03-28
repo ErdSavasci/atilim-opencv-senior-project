@@ -22,7 +22,6 @@ namespace MoveCursorByHand
         private static MainForm mainFormInstance = null;
         private Camera camera = null;
         private SynchronizationContext context = null;
-        private bool itemSelectedManually = false;
 
         public MainForm()
         {
@@ -148,8 +147,6 @@ namespace MoveCursorByHand
             {
                 Action action = () =>
                 {
-                    control.Visible = false;
-
                     control.Refresh();
                     Application.DoEvents();
 
@@ -163,8 +160,6 @@ namespace MoveCursorByHand
                     bitmap = bitmapImage.Clone(new Rectangle(control.Location.X + right, control.Location.Y, control.Width, control.Height), bitmapImage.PixelFormat);
 
                     control.BackgroundImage = bitmap;
-
-                    control.Visible = true;
                 };
                 control.Invoke(action);
             });
@@ -191,6 +186,7 @@ namespace MoveCursorByHand
 
         private void MainForm_SizeChanged(object sender, EventArgs e)
         {
+            backgroundPictureBox.Size = new Size(Width, Height - 60);
             captureImageBox.SizeMode = PictureBoxSizeMode.StretchImage;
             captureImageBox.VerticalScrollBar.Maximum = 0;
             captureImageBox.HorizontalScrollBar.Maximum = 0;
@@ -202,19 +198,13 @@ namespace MoveCursorByHand
             captureImageBox.HorizontalScrollBar.Size = new Size(0, 0);
             captureImageBox.Height = (int)(Height / 1.22);
             captureImageBox.Width = (int) (Width / 1.81);
+
+            optionsPictureBox.Size = new Size(103, 92);
+            optionsPictureBox.Location = new Point(leftRadioButton.Location.X - 5, leftRadioButton.Location.Y - 25);  
         }
 
         private void MainForm_Resize(object sender, EventArgs e)
-        {
-            backgroundPictureBox.Size = new Size(Width, Height - 60);
-
-            MakeTransparent(label1);
-            MakeTransparent(label2);
-            MakeTransparent(label3);
-            MakeTransparent(metroLink);
-            MakeTransparent(availableCamerasListView);
-            MakeTransparent(loadingGIFPicureBox);
-
+        {            
             if (WindowState == FormWindowState.Minimized)
             {
                 if (camera.isActive())
@@ -225,9 +215,18 @@ namespace MoveCursorByHand
                 Hide();
                 MinimizedForm form = Application.OpenForms.OfType<MinimizedForm>().Count() > 0 ? Application.OpenForms.OfType<MinimizedForm>().First() : new MinimizedForm();
                 form.TopMost = true;                
-                camera.SetIsActivated(true);
+                camera.SetIsActivated(false);
                 form.SetCamera(camera);
                 form.Show();
+            }
+            else
+            {
+                MakeTransparent(label1);
+                MakeTransparent(label2);
+                MakeTransparent(label3);
+                MakeTransparent(metroLink);
+                MakeTransparent(availableCamerasListView);
+                MakeTransparent(loadingGIFPicureBox);
             }
         }
 
@@ -281,13 +280,14 @@ namespace MoveCursorByHand
 
         private void availableCamerasListView_ItemSelectionChanged(object sender, ListViewItemSelectionChangedEventArgs e)
         {
-            if(camera.getActiveDeviceIndex() == e.ItemIndex && !itemSelectedManually)
-            {               
+            Devices devices = new Devices();
+
+            if(devices.Count() > 1 && camera.getActiveDeviceIndex() != e.ItemIndex)
+            {
                 loadingGIFPicureBox.Image = Properties.Resources.loading;
                 loadingGIFPicureBox.Tag = e.ItemIndex;
                 loadingGIFPicureBox.Visible = true;
-                timer1.Start();
-                itemSelectedManually = true;
+                timer1.Start(); 
             }           
         }
 
@@ -297,12 +297,11 @@ namespace MoveCursorByHand
             {
                 Action clearImageAction = () => {
                     loadingGIFPicureBox.Visible = false;
-                    loadingGIFPicureBox.Image = null;                   
+                    loadingGIFPicureBox.Image = null;                
                 };
                 loadingGIFPicureBox.Invoke(clearImageAction);
             });
             clearThread.Start();
-            itemSelectedManually = false;
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -318,9 +317,7 @@ namespace MoveCursorByHand
             Devices devices = new Devices();
             camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag);
             camera.setFirstFrameCaptured(true);
-            SetCamera(camera);
-
-            itemSelectedManually = true;            
+            SetCamera(camera);           
         }
     }
 }

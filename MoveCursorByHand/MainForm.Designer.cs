@@ -43,12 +43,12 @@
             this.label1 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
-            this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.optionsPictureBox = new System.Windows.Forms.PictureBox();
             this.loadingGIFPicureBox = new System.Windows.Forms.PictureBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPicureBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -247,15 +247,17 @@
             this.label3.TabIndex = 19;
             this.label3.Text = "Macro #2";
             // 
-            // pictureBox1
+            // optionsPictureBox
             // 
-            this.pictureBox1.BackgroundImage = global::MoveCursorByHand.Properties.Resources.optionsPlate3;
-            this.pictureBox1.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
-            this.pictureBox1.Location = new System.Drawing.Point(449, 357);
-            this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(103, 92);
-            this.pictureBox1.TabIndex = 20;
-            this.pictureBox1.TabStop = false;
+            this.optionsPictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left)));
+            this.optionsPictureBox.BackgroundImage = global::MoveCursorByHand.Properties.Resources.optionsPlate3;
+            this.optionsPictureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Stretch;
+            this.optionsPictureBox.Location = new System.Drawing.Point(449, 357);
+            this.optionsPictureBox.Name = "optionsPictureBox";
+            this.optionsPictureBox.Size = new System.Drawing.Size(103, 92);
+            this.optionsPictureBox.TabIndex = 20;
+            this.optionsPictureBox.TabStop = false;
             // 
             // loadingGIFPicureBox
             // 
@@ -283,7 +285,7 @@
             this.Controls.Add(this.loadingGIFPicureBox);
             this.Controls.Add(this.rightRadioButton);
             this.Controls.Add(this.leftRadioButton);
-            this.Controls.Add(this.pictureBox1);
+            this.Controls.Add(this.optionsPictureBox);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
@@ -306,7 +308,7 @@
             this.Resize += new System.EventHandler(this.MainForm_Resize);
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPicureBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -329,7 +331,7 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.PictureBox optionsPictureBox;
         private System.Windows.Forms.PictureBox loadingGIFPicureBox;
         private System.Windows.Forms.Timer timer1;
     }

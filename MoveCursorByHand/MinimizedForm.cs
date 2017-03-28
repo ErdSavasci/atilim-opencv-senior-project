@@ -42,11 +42,12 @@ namespace MoveCursorByHand
             contextMenuStrip.Items.Add("Exit");
             contextMenuStrip.ItemClicked += ContextMenuStrip_ItemClicked;
 
+            returnPictureBox.BackColor = ColorTranslator.FromHtml("#1976D2");
             notifyIcon.Visible = true;
             notifyIcon.BalloonTipTitle = "Control is activated";
             notifyIcon.BalloonTipText = "Now, you can control your screen";
             notifyIcon.Text = "HoverMouse © 2017";
-            notifyIcon.ShowBalloonTip(1000);
+            //notifyIcon.ShowBalloonTip(1000);
 
             notifyIcon.ContextMenuStrip = contextMenuStrip;
 

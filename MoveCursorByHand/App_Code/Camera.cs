@@ -21,6 +21,16 @@ using System.Drawing.Imaging;
 using Emgu.CV.BgSegm;
 using System.IO;
 using System.Reflection;
+using Emgu.CV.XFeatures2D;
+using Emgu.CV.Features2D;
+using Emgu.CV.Cvb;
+using Emgu.CV.Flann;
+using Template = Accord.Extensions.Imaging.Algorithms.LINE2D.ImageTemplate;
+using TemplatePyramid = Accord.Extensions.Imaging.Algorithms.LINE2D.ImageTemplatePyramid<Accord.Extensions.Imaging.Algorithms.LINE2D.ImageTemplate>;
+using Accord.Extensions.Math.Geometry;
+using Accord.Extensions.Imaging;
+using Accord.Extensions.Imaging.Algorithms.LINE2D;
+using DotImaging;
 
 namespace MoveCursorByHand.App_Code
 {
@@ -52,6 +62,7 @@ namespace MoveCursorByHand.App_Code
         private Mat camShiftMask;
         private Mat hsvCroppedFrame;
         private Mat camShiftBackProject;
+        private Mat newFilteredCroppedFrame;
         private bool canStartCamera = false;
         private Rectangle camShiftTrackWindow;
         private int handPalmClosedCount = 0;
@@ -71,6 +82,8 @@ namespace MoveCursorByHand.App_Code
         private Size handSize;
         private int deviceIndex = 0;
         private int handWidth, handHeight, handLocX, handLocY;
+        private List<TemplatePyramid> templatePyr;
+        private bool HANDFOUND = false;
         #endregion
 
         public Camera(ImageBox captureImageBox, DsDevice systemCamera, int cameraIndex)
@@ -128,6 +141,7 @@ namespace MoveCursorByHand.App_Code
                     detectHandPalmClosedFrame = new Mat();
                     maskedCroppedFrame = new Mat();
 
+                    newFilteredCroppedFrame = new Mat();
                     camShiftBackProject = new Mat();
                     camShiftHist = new Mat();
                     camShiftMask = new Mat();
@@ -161,6 +175,8 @@ namespace MoveCursorByHand.App_Code
                     StreamWriter streamWriter = new StreamWriter(xmlCascadeFilePath);
                     streamWriter.Write(aGestContent);
                     streamWriter.Close();
+
+                    InitializeFastTemplateMatching();
 
                     haarCascade = new CascadeClassifier(xmlCascadeFilePath);
 
@@ -250,15 +266,17 @@ namespace MoveCursorByHand.App_Code
             return availableResolutions;
         }
 
-        public void ChangeHandPosition(string pos)
+        public async void ChangeHandPosition(string pos)
         {
-            if (pos.Equals("Left"))
+            if (pos.Equals("Left") && leftHandPos != true)
             {
                 leftHandPos = true;
+                templatePyr = await Task.Run(() => fromLeftHandFilesAsync());
             }
-            else
+            else if (leftHandPos != false)
             {
                 leftHandPos = false;
+                templatePyr = await Task.Run(() => fromRightHandFilesAsync());
             }
         }
 
@@ -525,7 +543,8 @@ namespace MoveCursorByHand.App_Code
             {
                 for (int i = 0; i < Math.Min(fingertipCoordinates.Count, 5); i++)
                 {
-                    CvInvoke.PutText(frame, fingertipNames[i].ToString(), fingertipCoordinates[i], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
+                    if (fingertipNames[i] != Finger.UNKNOWN)
+                        CvInvoke.PutText(frame, fingertipNames[i].ToString(), fingertipCoordinates[i], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
                 }
             }
             else
@@ -568,12 +587,128 @@ namespace MoveCursorByHand.App_Code
             }
         }
 
+        private async Task<List<TemplatePyramid>> fromLeftHandFilesAsync()
+        {
+            List<TemplatePyramid> list = new List<TemplatePyramid>();
+            string curDir = Directory.GetParent(Directory.GetCurrentDirectory()).FullName;
+            curDir = curDir.Substring(0, curDir.LastIndexOf("\\"));
+            string resDir = Path.Combine(curDir, "Resources", "LeftHand_BW");
+            string[] files = Directory.GetFiles(resDir, "*.bmp");
+
+            object synObj = new object();
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(files, delegate (string file)
+                {
+                    Gray<byte>[,] preparedBWImage = ImageIO.LoadGray(file).Clone();
+
+                    try
+                    {
+                        TemplatePyramid tp = TemplatePyramid.CreatePyramidFromPreparedBWImage(preparedBWImage, new FileInfo(file).Name);
+                        lock (synObj)
+                        {
+                            list.Add(tp);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                });
+            });
+
+            return list;
+        }
+
+        private async Task<List<TemplatePyramid>> fromRightHandFilesAsync()
+        {
+            List<TemplatePyramid> list = new List<TemplatePyramid>();
+            string curDir = Directory.GetParent(Directory.GetCurrentDirectory()).FullName;
+            curDir = curDir.Substring(0, curDir.LastIndexOf("\\"));
+            string resDir = Path.Combine(curDir, "Resources", "RightHand_BW");
+            string[] files = Directory.GetFiles(resDir, "*.bmp");
+
+            object synObj = new object();
+            await Task.Run(() =>
+            {
+                Parallel.ForEach(files, delegate (string file)
+                {
+                    Gray<byte>[,] preparedBWImage = ImageIO.LoadGray(file).Clone();
+
+                    try
+                    {
+                        TemplatePyramid tp = TemplatePyramid.CreatePyramidFromPreparedBWImage(preparedBWImage, new FileInfo(file).Name);
+                        lock (synObj)
+                        {
+                            list.Add(tp);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                });
+            });
+
+            return list;
+        }
+
+        private async void InitializeFastTemplateMatching()
+        {
+            templatePyr = await Task.Run(() => fromRightHandFilesAsync());
+        }
+
+        private List<Match> findHandByFastTemplateMatching(Mat bgrFrame)
+        {
+            if (templatePyr != null)
+            {
+                int downSampleCount = 1;
+                Mat scaledBgrFrame = new Mat();
+                scaledBgrFrame = bgrFrame.Clone();
+                int threshold = 100;
+                if (isActivated)
+                    threshold = 200;
+                while (scaledBgrFrame.Height > threshold) //80X80 or 160x160 is good
+                {
+                    CvInvoke.PyrDown(scaledBgrFrame, scaledBgrFrame);
+                    downSampleCount *= 2;
+                }
+
+                List<Match> bestMatchList = new List<Match>();
+                List<Match> matchList = new List<Match>();            
+                LinearizedMapPyramid linMapPyr = LinearizedMapPyramid.CreatePyramid(scaledBgrFrame.Bitmap.ToArray().ToGray());
+                matchList = linMapPyr.MatchTemplates(templatePyr, 88);
+                IList<Cluster<Match>> matchGroups = new MatchClustering(0).Group(matchList.ToArray());
+
+                Match downSampleInfo = new Match();
+                downSampleInfo.Score = downSampleCount;
+                bestMatchList.Insert(0, downSampleInfo);
+
+                foreach (var item in matchGroups)
+                {
+                    bestMatchList.Add(item.Representative);
+                }
+
+                return bestMatchList;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         private void ProcessFrame(object sender, EventArgs arg)
         {
             //frame -> croppedFrame -> filteredCroppedFrame
             //All GUI operations are applied to croppedFrame
             //croppedFrame (BGR) / filteredCroppedFrame (BW)
 
+            HANDFOUND = false;
+            count_defects = 0;
+            Point centerPoint = new Point();
+            MCvMoments mcv = new MCvMoments();
+            Rectangle boundingRect = new Rectangle();
+            Rectangle handRectangleFastTemplate = new Rectangle(-1, -1, -1, -1);
             try
             {
                 milliSeconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -624,6 +759,7 @@ namespace MoveCursorByHand.App_Code
                         }
                     }
 
+                    //CAMSHIFT METHOD FOR DETECTING AND TRACKING HAND BY HSV VALUES OF HAND
                     if (isActivated && firstFrameCaptured)
                     {
                         if (handWidth != -1 && handHeight != -1 && handLocX != -1 && handLocY != -1)
@@ -631,14 +767,11 @@ namespace MoveCursorByHand.App_Code
                             CvInvoke.CvtColor(croppedFrame, hsvCroppedFrame, ColorConversion.Bgr2Hsv);
                             CvInvoke.InRange(hsvCroppedFrame, new VectorOfInt(new int[] { 0, 10, 60 }), new VectorOfInt(new int[] { 20, 150, 255 }), camShiftMask);
                             CvInvoke.CalcHist(new VectorOfMat(new Mat[] { hsvCroppedFrame }), new int[] { 0 }, camShiftMask, camShiftHist, new int[] { 180 }, new float[] { 0, 180 }, false);
-                            CvInvoke.Normalize(camShiftHist, camShiftHist, 0, 255, NormType.MinMax);
-
-                            handLocX = handLocX + (frame.Width) - (frame.Width / 26) - (frame.Width / 2);
-                            handLocY = handLocY + (frame.Width / 26);
+                            CvInvoke.Normalize(camShiftHist, camShiftHist, 0, 255, NormType.MinMax);                           
 
                             handPoint = new Point(handLocX, handLocY);
                             handSize = new Size(handWidth, handHeight);
-                            camShiftTrackWindow = new Rectangle(handPoint, handSize);
+                            camShiftTrackWindow = new Rectangle(handPoint, handSize);                           
                         }
                         firstFrameCaptured = false;
                     }
@@ -646,28 +779,70 @@ namespace MoveCursorByHand.App_Code
                     {
                         if (handWidth != -1 && handHeight != -1 && handLocX != -1 && handLocY != -1
                             && handSize.Width != -1 && handSize.Height != -1 && handPoint.X != -1 && handPoint.Y != -1)
-                        {                            
-                            CvInvoke.CvtColor(frame, hsvCroppedFrame, ColorConversion.Bgr2Hsv);
+                        {
+                            if(croppedFrame.Width < frame.Width && croppedFrame.Height < frame.Height)
+                            {
+                                handLocX = handLocX + (frame.Width) - (frame.Width / 26) - (frame.Width / 2);
+                                handLocY = handLocY + (frame.Width / 26);
+                                handPoint = new Point(handLocX, handLocY);
+                                handSize = new Size(handWidth, handHeight);
+                                camShiftTrackWindow = new Rectangle(handPoint, handSize);
+                            }
+
+                            CvInvoke.CvtColor(croppedFrame, hsvCroppedFrame, ColorConversion.Bgr2Hsv);
                             CvInvoke.CalcBackProject(new VectorOfMat(new Mat[] { hsvCroppedFrame }), new int[] { 0 }, camShiftHist, camShiftBackProject, new float[] { 0, 180 }, 1);
                             CvInvoke.CamShift(camShiftBackProject, ref camShiftTrackWindow, new MCvTermCriteria(10, 1));
-                            CvInvoke.Rectangle(frame, camShiftTrackWindow, new MCvScalar(255, 0, 0), 5);
+                            //CvInvoke.Rectangle(frame, camShiftTrackWindow, new MCvScalar(255, 0, 0), 5);
 
-                            croppedFrame = new Mat(frame, new Rectangle(camShiftTrackWindow.X , camShiftTrackWindow.Y, camShiftTrackWindow.Width, camShiftTrackWindow.Height));
+                            //croppedFrame = new Mat(croppedFrame, new Rectangle(camShiftTrackWindow.X - camShiftTrackWindow.X / 2, camShiftTrackWindow.Y - camShiftTrackWindow.Y / 2, (int)Math.Min(camShiftTrackWindow.Width * 1.5, croppedFrame.Width - camShiftTrackWindow.X), (int)Math.Min(camShiftTrackWindow.Height * 1.5, croppedFrame.Height - camShiftTrackWindow.Y)));
                         }
                     }
 
+                    //BACKGROUND SUBTRACTOR METHOD
                     CvInvoke.BilateralFilter(croppedFrame, filteredCroppedFrame, 5, 50, 100);
                     bgSubtractor.Apply(filteredCroppedFrame, maskedCroppedFrame);
                     Matrix<int> element = new Matrix<int>(3, 3);
                     element.SetValue(1);
                     CvInvoke.Erode(maskedCroppedFrame, maskedCroppedFrame, element, new Point(-1, -1), 1, BorderType.Default, new MCvScalar());
-                    CvInvoke.BitwiseAnd(filteredCroppedFrame, filteredCroppedFrame, filteredCroppedFrame, maskedCroppedFrame);
+                    CvInvoke.BitwiseAnd(filteredCroppedFrame, filteredCroppedFrame, filteredCroppedFrame, maskedCroppedFrame);                    
+                   
+                    //FAST TEMPLATE MATCHING METHOD
+                    List<Match> bestRepresentatives = findHandByFastTemplateMatching(croppedFrame);
+                    if (bestRepresentatives != null)
+                    {
+                        bool skipFirstOne = true;
+                        int downSampleCount = 1;
+                        handRectangleFastTemplate = new Rectangle(0, 0, croppedFrame.Width, croppedFrame.Height);
+                        foreach (var item in bestRepresentatives)
+                        {
+                            if (!skipFirstOne) {
+                                int extraValue = (croppedFrame.Width / croppedFrame.Height);
+                                if(isActivated)
+                                    extraValue = (croppedFrame.Width / croppedFrame.Height);
+                                handRectangleFastTemplate = new Rectangle(item.BoundingRect.X * downSampleCount - 50, item.BoundingRect.Y * downSampleCount, item.BoundingRect.Width * downSampleCount + 25, item.BoundingRect.Height * downSampleCount);
+                                CvInvoke.Rectangle(croppedFrame, handRectangleFastTemplate, new MCvScalar(0, 255, 255), 2);                          
+                            }
+                            else
+                            {
+                                downSampleCount = (int)item.Score > 0 ? (int)item.Score : 1;
+                                skipFirstOne = false;
+                            }                            
+                        }
+                        if(bestRepresentatives.Count > 1)
+                        {
+                            HANDFOUND = true;
+                        }
+
+                        filteredCroppedFrame = new Mat(filteredCroppedFrame, new Rectangle(handRectangleFastTemplate.X, handRectangleFastTemplate.Y, Math.Min(handRectangleFastTemplate.Width, filteredCroppedFrame.Width - handRectangleFastTemplate.X), Math.Min(handRectangleFastTemplate.Height, filteredCroppedFrame.Height - handRectangleFastTemplate.Y)));
+                        croppedFrame = new Mat(croppedFrame, new Rectangle(handRectangleFastTemplate.X, handRectangleFastTemplate.Y, Math.Min(handRectangleFastTemplate.Width, croppedFrame.Width - handRectangleFastTemplate.X), Math.Min(handRectangleFastTemplate.Height, croppedFrame.Height - handRectangleFastTemplate.Y)));
+                    }
 
                     CvInvoke.CvtColor(filteredCroppedFrame, filteredCroppedFrame, ColorConversion.Bgr2Gray);
 
                     if (!isActivated)
                         DrawAnalyzeRectangle(ref croppedFrame);
 
+                    //HAAR CASCADE METHOD FOR DETECTING CLOSED HAND
                     detectHandPalmClosedFrame = croppedFrame.Clone();
                     CvInvoke.CvtColor(detectHandPalmClosedFrame, detectHandPalmClosedFrame, ColorConversion.Bgr2Gray);
 
@@ -679,17 +854,17 @@ namespace MoveCursorByHand.App_Code
                     Rectangle[] detectedHaarCascadeRectangles = haarCascade.DetectMultiScale(detectHandPalmClosedFrame, 1.4, 4);
                     handPalmClosedCount = detectedHaarCascadeRectangles.Count();
 
-                    if (count_defects > 4)
+                    if (count_defects > 4 && HANDFOUND)
                     {
                         if (x1 == -1 && y1 == -1)
                         {
-                            x1 = camShiftTrackWindow.X + (camShiftTrackWindow.Width / 2);
-                            y1 = camShiftTrackWindow.Y + (camShiftTrackWindow.Height / 2);
+                            x1 = handRectangleFastTemplate.X + (handRectangleFastTemplate.Width / 2);
+                            y1 = handRectangleFastTemplate.Y + (handRectangleFastTemplate.Height / 2);
                         }
                         else if (x2 != x1 || y2 != y1)
                         {
-                            x2 = camShiftTrackWindow.X + (camShiftTrackWindow.Width / 2);
-                            y2 = camShiftTrackWindow.Y + (camShiftTrackWindow.Height / 2);
+                            x2 = handRectangleFastTemplate.X + (handRectangleFastTemplate.Width / 2);
+                            y2 = handRectangleFastTemplate.Y + (handRectangleFastTemplate.Height / 2);
 
                             if (isActivated)
                                 MouseMovement(x1, x2, y1, y2, frame);
@@ -704,10 +879,13 @@ namespace MoveCursorByHand.App_Code
                     if (handPalmClosedCount > 0)
                     {
                         Rectangle detectedRect = detectedHaarCascadeRectangles.First();
+                        if (!leftHandPos)
+                            detectedRect.X = Math.Abs(croppedFrame.Width - detectedRect.X - detectedRect.Width);
                         CvInvoke.Rectangle(croppedFrame, detectedRect, new MCvScalar(255, 0, 0), 2);
                         Console.WriteLine(handPalmClosedCount + " Closed Hand Palm Found!!");
                     }
 
+                    //THRESHOLD METHOD AND CONTOUR DETECTION
                     CvInvoke.GaussianBlur(filteredCroppedFrame, filteredCroppedFrame, new Size(41, 41), 0);
                     CvInvoke.Threshold(filteredCroppedFrame, filteredCroppedFrame, 60, 255, ThresholdType.BinaryInv | ThresholdType.Otsu);
                     //CvInvoke.AdaptiveThreshold(filteredCroppedFrame, filteredCroppedFrame, 127, AdaptiveThresholdType.GaussianC, ThresholdType.BinaryInv, 7, 2);
@@ -715,112 +893,116 @@ namespace MoveCursorByHand.App_Code
                     VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
                     Mat hierarchy = new Mat();
                     CvInvoke.FindContours(filteredCroppedFrame.Clone(), contours, hierarchy, RetrType.Tree, ChainApproxMethod.ChainApproxNone);
-                    double maxArea = CvInvoke.ContourArea(contours[0]);
-                    int maxAreaIndex = 0;
-                    for (int i = 0; i < contours.Size; i++)
+
+                    //IF NO CONTOUR IS FOUND, THEN DON'T DO ANYTHING
+                    if (contours.Size > 0 && HANDFOUND)
                     {
-                        if (CvInvoke.ContourArea(contours[i]) > maxArea)
+                        double maxArea = CvInvoke.ContourArea(contours[0]);
+                        int maxAreaIndex = 0;
+                        for (int i = 0; i < contours.Size; i++)
                         {
-                            maxArea = CvInvoke.ContourArea(contours[i]);
-                            maxAreaIndex = i;
-                        }
-                    }
-
-                    VectorOfPoint maxResult = new VectorOfPoint(contours[maxAreaIndex].ToArray());
-                    Rectangle boundingRect = CvInvoke.BoundingRectangle(maxResult);
-                    handWidth = boundingRect.Width;
-                    handHeight = boundingRect.Height;
-                    CvInvoke.Rectangle(croppedFrame, boundingRect, new MCvScalar(255, 255, 255), 0);
-                    VectorOfInt hullResult = new VectorOfInt();
-                    if (leftHandPos)
-                        CvInvoke.ConvexHull(maxResult, hullResult);
-                    else
-                        CvInvoke.ConvexHull(maxResult, hullResult, true);
-
-                    if (leftHandPos)
-                        CvInvoke.ConvexHull(maxResult, hullResult, false, false);
-                    else
-                        CvInvoke.ConvexHull(maxResult, hullResult, true, false);
-
-                    Mat defects = new Mat();
-                    CvInvoke.ConvexityDefects(maxResult, hullResult, defects);
-                    count_defects = 0;
-
-                    Matrix<int> matrix = new Matrix<int>(defects.Rows, defects.Cols, defects.NumberOfChannels);
-                    defects.CopyTo(matrix);
-                    Matrix<int>[] channels = matrix.Split();
-
-                    //TO FIND THE CENTER OF THE CONTOUR-------------------------------------------------------------
-                    Point centerPoint = new Point();
-                    MCvMoments mcv = CvInvoke.Moments(contours[maxAreaIndex], true);
-                    double m00 = CvInvoke.cvGetSpatialMoment(ref mcv, 0, 0);
-                    double m01 = CvInvoke.cvGetSpatialMoment(ref mcv, 0, 1);
-                    double m10 = CvInvoke.cvGetSpatialMoment(ref mcv, 1, 0);
-                    int scale = 1;
-                    if (m00 != 0)
-                    {
-                        int xCenter = (int)Math.Round(m10 / m00) * scale;
-                        int yCenter = (int)Math.Round(m01 / m00) * scale;
-                        centerPoint = new Point(xCenter, yCenter);
-                        
-                        handLocX = centerPoint.X;
-                        handLocY = centerPoint.Y;
-                    }
-                    //----------------------------------------------------------------------------------------------                
-
-                    CvInvoke.DrawContours(filteredCroppedFrame, contours, -1, new MCvScalar(0, 255, 0), 3);
-                    for (int i = 0; i < defects.Rows; i++)
-                    {
-                        int s = 0, e = 0, f = 0, d = 0;
-
-                        Point start, end, far;
-                        if (i < matrix.Data.Length)
-                        {
-                            s = matrix.Data[i, 0]; //Start Point Index
-                            e = matrix.Data[i, 1]; //End Point Index
-                            f = matrix.Data[i, 2]; //Farthest Point Index
-                            d = matrix.Data[i, 3]; //Approximate Distance to Farthest Point Index
-                        }
-                        if (s < maxResult.Size)
-                            start = maxResult[s]; //Start Point
-                        else
-                            start = maxResult[maxResult.Size - 1];
-                        if (e < maxResult.Size)
-                            end = maxResult[e]; //End Point
-                        else
-                            end = maxResult[maxResult.Size - 1];
-                        if (f < maxResult.Size)
-                            far = maxResult[f]; //Farthest Point
-                        else
-                            far = maxResult[maxResult.Size - 1];
-                        double a = Math.Sqrt(Math.Pow((end.X - start.X), 2) + Math.Pow((end.Y - start.Y), 2));
-                        double b = Math.Sqrt(Math.Pow((far.X - start.X), 2) + Math.Pow((far.Y - start.Y), 2));
-                        double c = Math.Sqrt(Math.Pow((end.X - far.X), 2) + Math.Pow((end.Y - far.Y), 2));
-                        double angle = Math.Acos((Math.Pow(b, 2) + Math.Pow(c, 2) - Math.Pow(a, 2)) / (2 * b * c)) * 57;
-                        if (angle <= 90)
-                        {
-                            count_defects = Math.Min(5, ++count_defects); //Detected Finger Numbers
-
-                            if (handPalmClosedCount > 0)
+                            if (CvInvoke.ContourArea(contours[i]) > maxArea)
                             {
-                                count_defects = 0;
-                            }
-
-                            if (count_defects > 0)
-                            {
-                                if (!leftHandPos)
-                                {
-                                    CvInvoke.Circle(croppedFrame, start, 1, new MCvScalar(0, 0, 255), 10);
-                                    fingertipCoordinates.Add(start);
-                                }
-                                else
-                                {
-                                    CvInvoke.Circle(croppedFrame, end, 1, new MCvScalar(0, 0, 255), 10);
-                                    fingertipCoordinates.Add(end);
-                                }
+                                maxArea = CvInvoke.ContourArea(contours[i]);
+                                maxAreaIndex = i;
                             }
                         }
-                        CvInvoke.Line(croppedFrame, start, end, new MCvScalar(0, 255, 0), 2);
+
+                        VectorOfPoint maxResult = new VectorOfPoint(contours[maxAreaIndex].ToArray());
+                        boundingRect = CvInvoke.BoundingRectangle(maxResult);
+                        handWidth = boundingRect.Width;
+                        handHeight = boundingRect.Height;
+                        CvInvoke.Rectangle(croppedFrame, boundingRect, new MCvScalar(255, 255, 255), 0);
+                        VectorOfInt hullResult = new VectorOfInt();
+                        if (leftHandPos)
+                            CvInvoke.ConvexHull(maxResult, hullResult);
+                        else
+                            CvInvoke.ConvexHull(maxResult, hullResult, true);
+
+                        if (leftHandPos)
+                            CvInvoke.ConvexHull(maxResult, hullResult, false, false);
+                        else
+                            CvInvoke.ConvexHull(maxResult, hullResult, true, false);
+
+                        Mat defects = new Mat();
+                        CvInvoke.ConvexityDefects(maxResult, hullResult, defects);
+
+                        Matrix<int> matrix = new Matrix<int>(defects.Rows, defects.Cols, defects.NumberOfChannels);
+                        defects.CopyTo(matrix);
+                        Matrix<int>[] channels = matrix.Split();
+
+                        //TO FIND THE CENTER OF THE CONTOUR-------------------------------------------------------------
+                        centerPoint = new Point();
+                        mcv = CvInvoke.Moments(contours[maxAreaIndex], true);
+                        double m00 = CvInvoke.cvGetSpatialMoment(ref mcv, 0, 0);
+                        double m01 = CvInvoke.cvGetSpatialMoment(ref mcv, 0, 1);
+                        double m10 = CvInvoke.cvGetSpatialMoment(ref mcv, 1, 0);
+                        int scale = 1;
+                        if (m00 != 0)
+                        {
+                            int xCenter = (int)Math.Round(m10 / m00) * scale;
+                            int yCenter = (int)Math.Round(m01 / m00) * scale;
+                            centerPoint = new Point(xCenter, yCenter);
+
+                            handLocX = centerPoint.X;
+                            handLocY = centerPoint.Y;
+                        }
+                        //----------------------------------------------------------------------------------------------                
+
+                        CvInvoke.DrawContours(filteredCroppedFrame, contours, -1, new MCvScalar(0, 255, 0), 3);
+                        for (int i = 0; i < defects.Rows; i++)
+                        {
+                            int s = 0, e = 0, f = 0, d = 0;
+
+                            Point start, end, far;
+                            if (i < matrix.Data.Length)
+                            {
+                                s = matrix.Data[i, 0]; //Start Point Index
+                                e = matrix.Data[i, 1]; //End Point Index
+                                f = matrix.Data[i, 2]; //Farthest Point Index
+                                d = matrix.Data[i, 3]; //Approximate Distance to Farthest Point Index
+                            }
+                            if (s < maxResult.Size)
+                                start = maxResult[s]; //Start Point
+                            else
+                                start = maxResult[maxResult.Size - 1];
+                            if (e < maxResult.Size)
+                                end = maxResult[e]; //End Point
+                            else
+                                end = maxResult[maxResult.Size - 1];
+                            if (f < maxResult.Size)
+                                far = maxResult[f]; //Farthest Point
+                            else
+                                far = maxResult[maxResult.Size - 1];
+                            double a = Math.Sqrt(Math.Pow((end.X - start.X), 2) + Math.Pow((end.Y - start.Y), 2));
+                            double b = Math.Sqrt(Math.Pow((far.X - start.X), 2) + Math.Pow((far.Y - start.Y), 2));
+                            double c = Math.Sqrt(Math.Pow((end.X - far.X), 2) + Math.Pow((end.Y - far.Y), 2));
+                            double angle = Math.Acos((Math.Pow(b, 2) + Math.Pow(c, 2) - Math.Pow(a, 2)) / (2 * b * c)) * 57;
+                            if (angle <= 90)
+                            {
+                                count_defects = Math.Min(5, ++count_defects); //Detected Finger Numbers
+
+                                if (handPalmClosedCount > 0)
+                                {
+                                    count_defects = 0;
+                                }
+
+                                if (count_defects > 0)
+                                {
+                                    if (!leftHandPos)
+                                    {
+                                        CvInvoke.Circle(croppedFrame, start, 1, new MCvScalar(0, 0, 255), 10);
+                                        fingertipCoordinates.Add(start);
+                                    }
+                                    else
+                                    {
+                                        CvInvoke.Circle(croppedFrame, end, 1, new MCvScalar(0, 0, 255), 10);
+                                        fingertipCoordinates.Add(end);
+                                    }
+                                }
+                            }
+                            CvInvoke.Line(croppedFrame, start, end, new MCvScalar(0, 255, 0), 2);
+                        }
                     }
 
                     //TO FIND THE THUMB INDEXES AND NAMES-----------------------------------------------------------
@@ -846,6 +1028,7 @@ namespace MoveCursorByHand.App_Code
                             CvInvoke.PutText(frame, count_defects.ToString(), new Point(frame.Width - (frame.Width / 26) - (frame.Width / 2) + (frame.Width / 4), frame.Width / 26), FontFace.HersheySimplex, Math.Min(1.0 + (frame.Height / 960), 2.5), new MCvScalar(255, 255, 255), 2);
                     }
 
+                    //ACTIVATING MOUSE CONTROL BY MINIMIZING WINDOW AFTER HOLDING HAND IN FRONT OF WEBCAM FOR 5 SECONDS
                     if (count_defects > 4)
                     {
                         activate = true;
@@ -863,7 +1046,7 @@ namespace MoveCursorByHand.App_Code
                         timeDelay = 0;
                     }
 
-                    if (timeDelay >= 55) //If hand is hold for 5 seconds or more
+                    if (timeDelay >= 5) //If hand is hold for 5 seconds or more
                     {
                         if (!isActivated && activate)
                         {
@@ -890,6 +1073,7 @@ namespace MoveCursorByHand.App_Code
 
                     Console.WriteLine("Detected FingerTip Number: " + count_defects);
 
+                    //CALCULATIONS FOR DELAY (DELAY IS NEEDED TO BE PUT TO DRAW FRAMES TO THE SCREEN CORRECTLY)
                     milliSeconds2 = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                     milliSecondsDiff = milliSeconds2 - milliSeconds;
 
@@ -910,6 +1094,8 @@ namespace MoveCursorByHand.App_Code
                         Thread.Sleep((int)(1000.0 / frameRate));
                     }
                 }
+
+                GC.Collect();
             }
             catch (Exception ex)
             {
