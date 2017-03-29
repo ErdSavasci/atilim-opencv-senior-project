@@ -42,15 +42,12 @@ namespace MoveCursorByHand.App_Code
         private double width = 0.0;
         private double height = 0.0;
         private Mat frame = null;
-        private Mat downFrame = null;
-        private Mat grayFrame = null;
         private Mat filteredCroppedFrame = null;
-        private Mat smallGrayFrame = null;
-        private Mat smoothedGrayFrame = null;
-        private Mat cannyFrame = null;
         private Mat detectHandPalmClosedFrame = null;
         private Mat croppedFrame = null;
         private Mat maskedCroppedFrame = null;
+        private Mat analyzeRectFrame = null;
+        private Mat hsvCroppedFrame;
         private ImageBox captureImageBox = null;
         private CascadeClassifier haarCascade = null;
         private int timeDelay = 0;
@@ -59,10 +56,8 @@ namespace MoveCursorByHand.App_Code
         private bool leftHandPos = false;
         private int x1 = -1, x2 = -1, y1 = -1, y2 = -1;
         private Mat camShiftHist;
-        private Mat camShiftMask;
-        private Mat hsvCroppedFrame;
+        private Mat camShiftMask;       
         private Mat camShiftBackProject;
-        private Mat newFilteredCroppedFrame;
         private bool canStartCamera = false;
         private Rectangle camShiftTrackWindow;
         private int handPalmClosedCount = 0;
@@ -131,21 +126,15 @@ namespace MoveCursorByHand.App_Code
 
                     //Different Frame objects for different purposes
                     frame = new Mat();
-                    downFrame = new Mat();
                     filteredCroppedFrame = new Mat();
-                    smallGrayFrame = new Mat();
-                    smoothedGrayFrame = new Mat();
-                    cannyFrame = new Mat();
-                    grayFrame = new Mat();
                     croppedFrame = new Mat();
                     detectHandPalmClosedFrame = new Mat();
                     maskedCroppedFrame = new Mat();
-
-                    newFilteredCroppedFrame = new Mat();
+                    hsvCroppedFrame = new Mat();
+                    analyzeRectFrame = new Mat();
                     camShiftBackProject = new Mat();
                     camShiftHist = new Mat();
-                    camShiftMask = new Mat();
-                    hsvCroppedFrame = new Mat();
+                    camShiftMask = new Mat();                    
                     bgSubtractor = new BackgroundSubtractorMOG2(0, 50, false);
 
                     handWidth = -1;
@@ -271,11 +260,13 @@ namespace MoveCursorByHand.App_Code
             if (pos.Equals("Left") && leftHandPos != true)
             {
                 leftHandPos = true;
+                templatePyr.Clear();
                 templatePyr = await Task.Run(() => fromLeftHandFilesAsync());
             }
             else if (leftHandPos != false)
             {
                 leftHandPos = false;
+                templatePyr.Clear();
                 templatePyr = await Task.Run(() => fromRightHandFilesAsync());
             }
         }
@@ -593,7 +584,7 @@ namespace MoveCursorByHand.App_Code
             string curDir = Directory.GetParent(Directory.GetCurrentDirectory()).FullName;
             curDir = curDir.Substring(0, curDir.LastIndexOf("\\"));
             string resDir = Path.Combine(curDir, "Resources", "LeftHand_BW");
-            string[] files = Directory.GetFiles(resDir, "*.bmp");
+            string[] files = Directory.GetFiles(resDir, "*.jpg");
 
             object synObj = new object();
             await Task.Run(() =>
@@ -626,7 +617,7 @@ namespace MoveCursorByHand.App_Code
             string curDir = Directory.GetParent(Directory.GetCurrentDirectory()).FullName;
             curDir = curDir.Substring(0, curDir.LastIndexOf("\\"));
             string resDir = Path.Combine(curDir, "Resources", "RightHand_BW");
-            string[] files = Directory.GetFiles(resDir, "*.bmp");
+            string[] files = Directory.GetFiles(resDir, "*.jpg");
 
             object synObj = new object();
             await Task.Run(() =>
@@ -717,8 +708,6 @@ namespace MoveCursorByHand.App_Code
                 if (capture != null && capture.Ptr != IntPtr.Zero)
                 {
                     capture.Retrieve(frame, 0);
-                    CvInvoke.CvtColor(frame, grayFrame, ColorConversion.Bgr2Gray);
-                    CvInvoke.PyrDown(frame, downFrame);
 
                     if (leftHandPos)
                     {
@@ -796,15 +785,7 @@ namespace MoveCursorByHand.App_Code
 
                             //croppedFrame = new Mat(croppedFrame, new Rectangle(camShiftTrackWindow.X - camShiftTrackWindow.X / 2, camShiftTrackWindow.Y - camShiftTrackWindow.Y / 2, (int)Math.Min(camShiftTrackWindow.Width * 1.5, croppedFrame.Width - camShiftTrackWindow.X), (int)Math.Min(camShiftTrackWindow.Height * 1.5, croppedFrame.Height - camShiftTrackWindow.Y)));
                         }
-                    }
-
-                    //BACKGROUND SUBTRACTOR METHOD
-                    CvInvoke.BilateralFilter(croppedFrame, filteredCroppedFrame, 5, 50, 100);
-                    bgSubtractor.Apply(filteredCroppedFrame, maskedCroppedFrame);
-                    Matrix<int> element = new Matrix<int>(3, 3);
-                    element.SetValue(1);
-                    CvInvoke.Erode(maskedCroppedFrame, maskedCroppedFrame, element, new Point(-1, -1), 1, BorderType.Default, new MCvScalar());
-                    CvInvoke.BitwiseAnd(filteredCroppedFrame, filteredCroppedFrame, filteredCroppedFrame, maskedCroppedFrame);                    
+                    }                   
                    
                     //FAST TEMPLATE MATCHING METHOD
                     List<Match> bestRepresentatives = findHandByFastTemplateMatching(croppedFrame);
@@ -819,7 +800,10 @@ namespace MoveCursorByHand.App_Code
                                 int extraValue = (croppedFrame.Width / croppedFrame.Height);
                                 if(isActivated)
                                     extraValue = (croppedFrame.Width / croppedFrame.Height);
-                                handRectangleFastTemplate = new Rectangle(item.BoundingRect.X * downSampleCount - 50, item.BoundingRect.Y * downSampleCount, item.BoundingRect.Width * downSampleCount + 25, item.BoundingRect.Height * downSampleCount);
+                                int rectX = item.BoundingRect.X * downSampleCount;
+                                if(rectX >= 50)
+                                    rectX = item.BoundingRect.X * downSampleCount - 50;
+                                handRectangleFastTemplate = new Rectangle(rectX, item.BoundingRect.Y * downSampleCount, Math.Min(item.BoundingRect.Width * downSampleCount + 50, croppedFrame.Width - item.BoundingRect.X), item.BoundingRect.Height * downSampleCount);
                                 CvInvoke.Rectangle(croppedFrame, handRectangleFastTemplate, new MCvScalar(0, 255, 255), 2);                          
                             }
                             else
@@ -832,15 +816,29 @@ namespace MoveCursorByHand.App_Code
                         {
                             HANDFOUND = true;
                         }
-
-                        filteredCroppedFrame = new Mat(filteredCroppedFrame, new Rectangle(handRectangleFastTemplate.X, handRectangleFastTemplate.Y, Math.Min(handRectangleFastTemplate.Width, filteredCroppedFrame.Width - handRectangleFastTemplate.X), Math.Min(handRectangleFastTemplate.Height, filteredCroppedFrame.Height - handRectangleFastTemplate.Y)));
+                       
                         croppedFrame = new Mat(croppedFrame, new Rectangle(handRectangleFastTemplate.X, handRectangleFastTemplate.Y, Math.Min(handRectangleFastTemplate.Width, croppedFrame.Width - handRectangleFastTemplate.X), Math.Min(handRectangleFastTemplate.Height, croppedFrame.Height - handRectangleFastTemplate.Y)));
                     }
+
+                    //BACKGROUND SUBTRACTOR METHOD
+                    CvInvoke.BilateralFilter(croppedFrame, filteredCroppedFrame, 5, 50, 100);
+                    bgSubtractor.Apply(filteredCroppedFrame, maskedCroppedFrame);
+                    Matrix<int> element = new Matrix<int>(3, 3);
+                    element.SetValue(1);
+                    CvInvoke.Erode(maskedCroppedFrame, maskedCroppedFrame, element, new Point(-1, -1), 1, BorderType.Default, new MCvScalar());
+                    CvInvoke.BitwiseAnd(filteredCroppedFrame, filteredCroppedFrame, filteredCroppedFrame, maskedCroppedFrame);
 
                     CvInvoke.CvtColor(filteredCroppedFrame, filteredCroppedFrame, ColorConversion.Bgr2Gray);
 
                     if (!isActivated)
-                        DrawAnalyzeRectangle(ref croppedFrame);
+                    {
+                        if (leftHandPos)
+                            analyzeRectFrame = new Mat(frame, new Rectangle(frame.Width / 26, frame.Width / 26, frame.Width / 2, frame.Width / 2));
+                        else
+                            analyzeRectFrame = new Mat(frame, new Rectangle(frame.Width - (frame.Width / 26) - (frame.Width / 2), frame.Width / 26, frame.Width / 2, frame.Width / 2));
+
+                        DrawAnalyzeRectangle(ref analyzeRectFrame);
+                    }
 
                     //HAAR CASCADE METHOD FOR DETECTING CLOSED HAND
                     detectHandPalmClosedFrame = croppedFrame.Clone();
@@ -854,7 +852,7 @@ namespace MoveCursorByHand.App_Code
                     Rectangle[] detectedHaarCascadeRectangles = haarCascade.DetectMultiScale(detectHandPalmClosedFrame, 1.4, 4);
                     handPalmClosedCount = detectedHaarCascadeRectangles.Count();
 
-                    if (count_defects > 4 && HANDFOUND)
+                    if (HANDFOUND)
                     {
                         if (x1 == -1 && y1 == -1)
                         {
@@ -1029,12 +1027,12 @@ namespace MoveCursorByHand.App_Code
                     }
 
                     //ACTIVATING MOUSE CONTROL BY MINIMIZING WINDOW AFTER HOLDING HAND IN FRONT OF WEBCAM FOR 5 SECONDS
-                    if (count_defects > 4)
+                    if (count_defects > 4 && HANDFOUND)
                     {
                         activate = true;
                         timeDelay = DateTime.Now.Second - pastTime;
                     }
-                    else if (count_defects < 1)
+                    else if (count_defects < 1 && !HANDFOUND)
                     {
                         activate = false;
                         timeDelay = DateTime.Now.Second - pastTime;
@@ -1046,15 +1044,9 @@ namespace MoveCursorByHand.App_Code
                         timeDelay = 0;
                     }
 
-                    if (timeDelay >= 5) //If hand is hold for 5 seconds or more
+                    if (timeDelay >= 10)
                     {
-                        if (!isActivated && activate)
-                        {
-                            isActivated = true;
-                            firstFrameCaptured = true;
-                            ActivateMouseControl();
-                        }
-                        else if (isActivated && !activate)
+                        if (isActivated && !activate)
                         {
                             isActivated = false;
                             DeactivateMouseControl();
@@ -1068,6 +1060,19 @@ namespace MoveCursorByHand.App_Code
                         timeDelay = 0;
                         activate = false;
                     }
+                    else if (timeDelay >= 5) //If hand is hold for 5 seconds or more
+                    {
+                        if (!isActivated && activate)
+                        {
+                            isActivated = true;
+                            firstFrameCaptured = true;
+                            ActivateMouseControl();
+
+                            pastTime = DateTime.Now.Second;
+                            timeDelay = 0;
+                            activate = false;
+                        }                        
+                    }                    
 
                     captureImageBox.Image = frame;
 
@@ -1091,7 +1096,7 @@ namespace MoveCursorByHand.App_Code
                     }
                     else
                     {
-                        Thread.Sleep((int)(1000.0 / frameRate));
+                        Thread.Sleep((int)(Math.Min(1000.0 / frameRate, 125)));
                     }
                 }
 

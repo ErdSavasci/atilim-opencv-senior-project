@@ -22,6 +22,7 @@ namespace MoveCursorByHand
         private static MainForm mainFormInstance = null;
         private Camera camera = null;
         private SynchronizationContext context = null;
+        private bool normalTransparent = false, maximizedTransparent = false;
 
         public MainForm()
         {
@@ -56,13 +57,6 @@ namespace MoveCursorByHand
             SetStyle(ControlStyles.SupportsTransparentBackColor, true);
 
             leftRadioButton.BackgroundImage = Properties.Resources.background4;
-
-            MakeTransparent(label1);
-            MakeTransparent(label2);
-            MakeTransparent(label3);
-            MakeTransparent(metroLink);
-            MakeTransparent(availableCamerasListView);
-            MakeTransparent(loadingGIFPicureBox);
 
             macroComboBox.Items.Add("ESC Key");
             macroComboBox.Items.Add("Shift Key");
@@ -200,7 +194,30 @@ namespace MoveCursorByHand
             captureImageBox.Width = (int) (Width / 1.81);
 
             optionsPictureBox.Size = new Size(103, 92);
-            optionsPictureBox.Location = new Point(leftRadioButton.Location.X - 5, leftRadioButton.Location.Y - 25);  
+            optionsPictureBox.Location = new Point(leftRadioButton.Location.X - 5, leftRadioButton.Location.Y - 25); 
+            
+            if(WindowState == FormWindowState.Maximized && !maximizedTransparent)
+            {
+                MakeTransparent(label1);
+                MakeTransparent(label2);
+                MakeTransparent(label3);
+                MakeTransparent(metroLink);
+                MakeTransparent(availableCamerasListView);
+                MakeTransparent(loadingGIFPicureBox);
+                normalTransparent = false;
+                maximizedTransparent = true;
+            } 
+            else if(WindowState == FormWindowState.Normal && !normalTransparent)
+            {
+                MakeTransparent(label1);
+                MakeTransparent(label2);
+                MakeTransparent(label3);
+                MakeTransparent(metroLink);
+                MakeTransparent(availableCamerasListView);
+                MakeTransparent(loadingGIFPicureBox);
+                normalTransparent = true;
+                maximizedTransparent = false;
+            }
         }
 
         private void MainForm_Resize(object sender, EventArgs e)
@@ -218,15 +235,6 @@ namespace MoveCursorByHand
                 camera.SetIsActivated(false);
                 form.SetCamera(camera);
                 form.Show();
-            }
-            else
-            {
-                MakeTransparent(label1);
-                MakeTransparent(label2);
-                MakeTransparent(label3);
-                MakeTransparent(metroLink);
-                MakeTransparent(availableCamerasListView);
-                MakeTransparent(loadingGIFPicureBox);
             }
         }
 
