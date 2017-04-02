@@ -113,7 +113,16 @@ namespace MoveCursorByHand
             }
 
             if (Application.OpenForms.Count > 1)
-                Environment.Exit(Environment.ExitCode);
+            {
+                try
+                {
+                    Environment.Exit(Environment.ExitCode);
+                }
+                catch (Exception ex)
+                {
+                    Application.Exit(null);
+                }
+            }
         }
 
         private void MinimizedForm_FormClosed(object sender, FormClosedEventArgs e)

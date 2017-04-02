@@ -113,23 +113,26 @@ namespace MoveCursorByHand
             MaterialSkinManager materialSkinManager = MaterialSkinManager.Instance;
             materialSkinManager.AddFormToManage(this);
             materialSkinManager.Theme = MaterialSkinManager.Themes.LIGHT;
-            materialSkinManager.ColorScheme = new ColorScheme(Primary.Blue700, Primary.Blue900, Primary.Blue500, Accent.Green700, TextShade.WHITE);            
+            materialSkinManager.ColorScheme = new ColorScheme(Primary.Blue700, Primary.Blue900, Primary.Blue500, Accent.Green700, TextShade.WHITE);                       
+
+            captureImageBox.SizeMode = PictureBoxSizeMode.StretchImage;
+            captureImageBox.VerticalScrollBar.Visible = false;
+            captureImageBox.HorizontalScrollBar.Visible = false;
+            captureImageBox.Width = (int)(Width / 1.81);
+
+            loadingGIFPicureBox.Visible = true;
 
             //Fills the listview elements with video capture device names
             int cameraIndex = -1;
             Devices devices = new Devices();
             availableCamerasListView.Items.Clear();
             for (int i = 0; i < devices.Count(); i++)
-            {                
+            {
                 availableCamerasListView.Items.Add(new ListViewItem(devices.ElementAt(i).Name));
-                cameraIndex = 0;             
+                cameraIndex = 0;
             }
 
-            captureImageBox.SizeMode = PictureBoxSizeMode.StretchImage;
-            captureImageBox.VerticalScrollBar.Visible = false;
-            captureImageBox.HorizontalScrollBar.Visible = false;
-            captureImageBox.Width = (int)(Width / 1.81);
-            camera = new Camera(captureImageBox, devices.First(), cameraIndex, handOverlayPictureBox);
+            camera = new Camera(captureImageBox, devices.First(), cameraIndex, handOverlayPictureBox, loadingGIFPicureBox);
             camera.Start();
 
             handOverlayThread = new Thread(() =>
@@ -187,7 +190,15 @@ namespace MoveCursorByHand
                 camera.Stop();
                 camera.ReleaseResources();
             }
-            Application.Exit(null);
+
+            try
+            {
+                Environment.Exit(Environment.ExitCode);
+            }
+            catch(Exception ex)
+            {
+                Application.Exit(null);
+            }
         }
 
         private void MainForm_SizeChanged(object sender, EventArgs e)
@@ -248,23 +259,25 @@ namespace MoveCursorByHand
             {
                 while (!abort)
                 {
-                    ChangeOpacityOfHandPictureBox(opacityValue);
-                    Thread.Sleep(100);
-
-                    if (isAscending)
+                   if(camera != null && camera.isActive())
                     {
-                        opacityValue = opacityValue + 0.05;
-                    }
-                    else
-                    {
-                        opacityValue = opacityValue - 0.05;
-                    }
+                        ChangeOpacityOfHandPictureBox(opacityValue);
+                        Thread.Sleep(100);
 
-                    if (opacityValue <= 0)
-                        isAscending = true;
-                    else if(opacityValue >= 0.20)
-                        isAscending = false;
-                    
+                        if (isAscending)
+                        {
+                            opacityValue = opacityValue + 0.05;
+                        }
+                        else
+                        {
+                            opacityValue = opacityValue - 0.05;
+                        }
+
+                        if (opacityValue <= 0)
+                            isAscending = true;
+                        else if (opacityValue >= 0.20)
+                            isAscending = false;
+                    }                    
                 }
             });
             changeThread.IsBackground = true;
@@ -354,7 +367,16 @@ namespace MoveCursorByHand
             }
 
             if (Application.OpenForms.Count > 1)
-                Environment.Exit(Environment.ExitCode);
+            {
+                try
+                {
+                    Environment.Exit(Environment.ExitCode);
+                }
+                catch (Exception ex)
+                {
+                    Application.Exit(null);
+                }
+            }
         }
 
         private void MainForm_VisibleChanged(object sender, EventArgs e)
@@ -370,12 +392,18 @@ namespace MoveCursorByHand
 
         private void leftRadioButton_CheckedChanged(object sender, EventArgs e)
         {
-            camera.ChangeHandPosition("Left");
+            if (camera != null)
+            {
+                camera.ChangeHandPosition("Left");
+            }
         }
 
         private void rightRadioButton_CheckedChanged(object sender, EventArgs e)
         {
-            camera.ChangeHandPosition("Right");
+            if(camera != null)
+            {
+                camera.ChangeHandPosition("Right");
+            }
         }
 
         private void metroLink_Click(object sender, EventArgs e)
@@ -399,7 +427,6 @@ namespace MoveCursorByHand
 
             if(devices.Count() > 1 && camera.getActiveDeviceIndex() != e.ItemIndex)
             {
-                loadingGIFPicureBox.Image = Properties.Resources.loading;
                 loadingGIFPicureBox.Tag = e.ItemIndex;
                 loadingGIFPicureBox.Visible = true;
                 timer1.Start(); 
@@ -427,6 +454,11 @@ namespace MoveCursorByHand
 
         }
 
+        private void MainForm_Shown(object sender, EventArgs e)
+        {
+            
+        }
+
         private void timer1_Tick(object sender, EventArgs e)
         {
             timer1.Stop();
@@ -438,7 +470,7 @@ namespace MoveCursorByHand
             }
 
             Devices devices = new Devices();
-            camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag, handOverlayPictureBox);
+            camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag, handOverlayPictureBox, loadingGIFPicureBox);
             camera.setFirstFrameCaptured(true);
             SetCamera(camera);           
         }

@@ -150,9 +150,11 @@
   <ItemGroup>
     <Compile Include="App_Code\Camera.cs" />
     <Compile Include="App_Code\Devices.cs" />
-    <Compile Include="App_Code\FastTemplateMatching.cs" />
+    <Compile Include="App_Code\FastTemplateMatcher.cs" />
     <Compile Include="App_Code\Finger.cs" />
+    <Compile Include="App_Code\FingertipDetector.cs" />
     <Compile Include="App_Code\FingertipRecognizer.cs" />
+    <Compile Include="App_Code\HandRecognizer.cs" />
     <Compile Include="App_Code\MouseMovement.cs" />
     <Compile Include="App_Code\Native.cs" />
     <Compile Include="App_Code\Resolution.cs" />
