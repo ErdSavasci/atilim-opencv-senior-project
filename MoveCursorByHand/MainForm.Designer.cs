@@ -46,10 +46,12 @@
             this.optionsPictureBox = new System.Windows.Forms.PictureBox();
             this.loadingGIFPicureBox = new System.Windows.Forms.PictureBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
+            this.handOverlayPictureBox = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPicureBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.handOverlayPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
             // exitButton
@@ -277,11 +279,23 @@
             this.timer1.Interval = 1500;
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick);
             // 
+            // handOverlayPictureBox
+            // 
+            this.handOverlayPictureBox.Image = global::MoveCursorByHand.Properties.Resources.hand_overlay;
+            this.handOverlayPictureBox.Location = new System.Drawing.Point(12, 73);
+            this.handOverlayPictureBox.Name = "handOverlayPictureBox";
+            this.handOverlayPictureBox.Size = new System.Drawing.Size(265, 243);
+            this.handOverlayPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.handOverlayPictureBox.TabIndex = 22;
+            this.handOverlayPictureBox.TabStop = false;
+            this.handOverlayPictureBox.Paint += new System.Windows.Forms.PaintEventHandler(this.handOverlayPictureBox_Paint);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 461);
+            this.Controls.Add(this.handOverlayPictureBox);
             this.Controls.Add(this.loadingGIFPicureBox);
             this.Controls.Add(this.rightRadioButton);
             this.Controls.Add(this.leftRadioButton);
@@ -310,6 +324,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPicureBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.handOverlayPictureBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -334,6 +349,7 @@
         private System.Windows.Forms.PictureBox optionsPictureBox;
         private System.Windows.Forms.PictureBox loadingGIFPicureBox;
         private System.Windows.Forms.Timer timer1;
+        private System.Windows.Forms.PictureBox handOverlayPictureBox;
     }
 }
 

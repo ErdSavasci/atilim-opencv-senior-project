@@ -150,7 +150,10 @@
   <ItemGroup>
     <Compile Include="App_Code\Camera.cs" />
     <Compile Include="App_Code\Devices.cs" />
+    <Compile Include="App_Code\FastTemplateMatching.cs" />
     <Compile Include="App_Code\Finger.cs" />
+    <Compile Include="App_Code\FingertipRecognizer.cs" />
+    <Compile Include="App_Code\MouseMovement.cs" />
     <Compile Include="App_Code\Native.cs" />
     <Compile Include="App_Code\Resolution.cs" />
     <Compile Include="App_Code\ScreenProperties.cs" />
@@ -200,6 +203,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <None Include="Resources\hand.png" />
     <None Include="Resources\grayscale_hand.png" />
     <None Include="Resources\maximize.png" />
     <None Include="Resources\loading.gif" />

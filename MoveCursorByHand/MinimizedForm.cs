@@ -1,17 +1,9 @@
 ﻿using MaterialSkin.Controls;
-using MetroFramework.Controls;
 using MoveCursorByHand.App_Code;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace MoveCursorByHand
@@ -69,7 +61,7 @@ namespace MoveCursorByHand
         public void SetCamera(Camera camera)
         {
             this.camera = camera;
-            camera.changeImageBox(captureImageBoxMinimized);
+            camera.ChangeImageBox(captureImageBoxMinimized);
             camera.Start();
         }
 
@@ -121,7 +113,7 @@ namespace MoveCursorByHand
             }
 
             if (Application.OpenForms.Count > 1)
-                Application.Exit(null);
+                Environment.Exit(Environment.ExitCode);
         }
 
         private void MinimizedForm_FormClosed(object sender, FormClosedEventArgs e)

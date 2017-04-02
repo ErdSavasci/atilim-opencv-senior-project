@@ -84,3 +84,76 @@ Mat newFilteredCroppedFrame = new Mat();
                         });
                         matcherThread.Start();
                     }
+
+
+					private void OverlayHandImage2(ref Mat analyzeRectFrame, Point loc)
+        {
+            Image<Bgra, byte> handOverlayImage = new Image<Bgra, byte>(Properties.Resources.hand_overlay);
+            Mat handOverlayMat = handOverlayImage.Mat;
+
+            for (int y = Math.Max(0, loc.Y); y < analyzeRectFrame.Rows; y++)
+            {
+                int yy = y - loc.Y;
+
+                if (yy >= handOverlayMat.Rows)
+                    break;
+
+                for (int x = 0; x < Math.Max(0, loc.X); x++)
+                {
+                    int xx = x - loc.X;
+
+                    if (xx >= handOverlayMat.Cols)
+                        break;
+
+                    double opacity = ((double)handOverlayMat.Data.GetValue(yy * handOverlayMat.Step + xx * handOverlayMat.NumberOfChannels + 3) / 255);
+
+                    for (int i = 0; opacity > 0 && i < analyzeRectFrame.NumberOfChannels; i++)
+                    {
+                        char foregroundPx = foreground.data[fY * foreground.step + fX * foreground.channels() + c];
+                        char backgroundPx = background.data[y * background.step + x * background.channels() + c];
+                        analyzeRectFrame.Data.[y * output.step + output.channels() * x + c] = backgroundPx * (1.- opacity) + foregroundPx * opacity;
+                    }
+                }
+            }
+        }
+
+
+		private void OverlayHandImage2(ref Mat analyzeRectFrame)
+        {
+            Point loc = new Point(analyzeRectFrame.Width / 2, analyzeRectFrame.Height / 2);
+
+            Image<Bgra, byte> handOverlayImage = new Image<Bgra, byte>(Properties.Resources.hand_overlay);
+            Mat handOverlayMat = handOverlayImage.Mat;
+
+            Image<Bgr, byte> analyzeRectImage = analyzeRectFrame.ToImage<Bgr, byte>();
+
+            for (int y = Math.Max(0, loc.Y); y < analyzeRectFrame.Rows; y++)
+            {
+                int yy = y - loc.Y;
+
+                if (yy >= handOverlayMat.Rows)
+                    break;
+
+                for (int x = Math.Max(0, loc.X); x < analyzeRectFrame.Cols; x++)
+                {
+                    int xx = x - loc.X;
+
+                    if (xx >= handOverlayMat.Cols)
+                        break;
+
+                    int xCoordinate = ((yy * handOverlayMat.Step + xx * handOverlayMat.NumberOfChannels + 3) / (handOverlayMat.Width * handOverlayMat.NumberOfChannels)) % (handOverlayMat.Height);
+                    int yCoordinate = ((yy * handOverlayMat.Step + xx * handOverlayMat.NumberOfChannels + 3) / handOverlayMat.NumberOfChannels) % (handOverlayMat.Width);
+                    int zCoordinate = (yy * handOverlayMat.Step + xx * handOverlayMat.NumberOfChannels + 3) % handOverlayMat.NumberOfChannels;
+                    byte obj = (byte)handOverlayImage.Data.GetValue(xCoordinate, yCoordinate, zCoordinate);
+                    double opacity = (obj / 255);
+
+                    for (int i = 0; opacity > 0 && i < analyzeRectFrame.NumberOfChannels; i++)
+                    {
+                        byte foregroundPx = (byte)handOverlayImage.Data.GetValue(((yy * handOverlayMat.Step + xx * handOverlayMat.NumberOfChannels + i) / (handOverlayMat.Width * handOverlayMat.NumberOfChannels)) % (handOverlayMat.Height), ((yy * handOverlayMat.Step + xx * handOverlayMat.NumberOfChannels + i) / handOverlayMat.NumberOfChannels) % (handOverlayMat.Width), (yy * handOverlayMat.Step + xx * handOverlayMat.NumberOfChannels + i) % handOverlayMat.NumberOfChannels);
+                        byte backgroundPx = (byte)analyzeRectImage.Data.GetValue(((y * analyzeRectFrame.Step + x * analyzeRectFrame.NumberOfChannels + i) / (analyzeRectFrame.Width * analyzeRectFrame.NumberOfChannels)) % (analyzeRectFrame.Height), ((y * analyzeRectFrame.Step + x * analyzeRectFrame.NumberOfChannels + i) / analyzeRectFrame.NumberOfChannels) % (analyzeRectFrame.Width), (y * analyzeRectFrame.Step + x * analyzeRectFrame.NumberOfChannels + i) % analyzeRectFrame.NumberOfChannels);
+                        analyzeRectImage.Data.SetValue((byte)(backgroundPx * (1 - opacity) + foregroundPx * opacity), ((y * analyzeRectFrame.Step + analyzeRectFrame.NumberOfChannels * x + i) / (analyzeRectFrame.Width * analyzeRectFrame.NumberOfChannels)) % (analyzeRectFrame.Height), ((y * analyzeRectFrame.Step + analyzeRectFrame.NumberOfChannels * x + i) / analyzeRectFrame.NumberOfChannels) % (analyzeRectFrame.Width), (y * analyzeRectFrame.Step + analyzeRectFrame.NumberOfChannels * x + i) % analyzeRectFrame.NumberOfChannels);
+                    }
+                }
+            }
+            analyzeRectFrame = analyzeRectImage.Mat.Clone();
+        }

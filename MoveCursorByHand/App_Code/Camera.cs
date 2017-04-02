@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
@@ -10,27 +9,15 @@ using System.Windows.Forms;
 using DirectShowLib;
 using System.Runtime.InteropServices;
 using System.Drawing;
-using MaterialSkin.Controls;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
-using Emgu.Util;
 using System.Threading;
 using System.Diagnostics;
 using Emgu.CV.VideoSurveillance;
 using System.Drawing.Imaging;
-using Emgu.CV.BgSegm;
 using System.IO;
 using System.Reflection;
-using Emgu.CV.XFeatures2D;
-using Emgu.CV.Features2D;
-using Emgu.CV.Cvb;
-using Emgu.CV.Flann;
-using Template = Accord.Extensions.Imaging.Algorithms.LINE2D.ImageTemplate;
-using TemplatePyramid = Accord.Extensions.Imaging.Algorithms.LINE2D.ImageTemplatePyramid<Accord.Extensions.Imaging.Algorithms.LINE2D.ImageTemplate>;
-using Accord.Extensions.Math.Geometry;
-using Accord.Extensions.Imaging;
 using Accord.Extensions.Imaging.Algorithms.LINE2D;
-using DotImaging;
 
 namespace MoveCursorByHand.App_Code
 {
@@ -72,17 +59,21 @@ namespace MoveCursorByHand.App_Code
         private long milliSecondsDiff = 0;
         private bool firstFrameCaptured = true;
         private BackgroundSubtractorMOG2 bgSubtractor;
-        private bool thumbFound = false, indexFound = false;
         private Point handPoint;
         private Size handSize;
         private int deviceIndex = 0;
         private int handWidth, handHeight, handLocX, handLocY;
-        private List<TemplatePyramid> templatePyr;
         private bool HANDFOUND = false;
+        private Rectangle handRectangleFastTemplate;
+        private PictureBox handOverlayPictureBox;
+        private FastTemplateMatching fastTemplateMatching;
+        private MouseMovement mouseMovement;
+        private FingertipRecognizer fingertipRecognizer;
         #endregion
 
-        public Camera(ImageBox captureImageBox, DsDevice systemCamera, int cameraIndex)
+        public Camera(ImageBox captureImageBox, DsDevice systemCamera, int cameraIndex, PictureBox handOverlayPictureBox)
         {
+            this.handOverlayPictureBox = handOverlayPictureBox;
             this.captureImageBox = captureImageBox;
             CvInvoke.UseOpenCL = true;
 
@@ -164,10 +155,17 @@ namespace MoveCursorByHand.App_Code
                     StreamWriter streamWriter = new StreamWriter(xmlCascadeFilePath);
                     streamWriter.Write(aGestContent);
                     streamWriter.Close();
-
-                    InitializeFastTemplateMatching();
-
                     haarCascade = new CascadeClassifier(xmlCascadeFilePath);
+
+                    //Initialize Fast Template Matching
+                    fastTemplateMatching = new FastTemplateMatching();
+                    fastTemplateMatching.InitializeFastTemplateMatching();
+
+                    //Initialize Mouse Movement
+                    mouseMovement = new MouseMovement();
+
+                    //Initialize Fingertip Recognizer
+                    fingertipRecognizer = new FingertipRecognizer();
 
                     MainForm mainForm = Application.OpenForms.OfType<MainForm>().First();
                     mainForm.clearLoadingAnimationPictureBox();
@@ -194,12 +192,12 @@ namespace MoveCursorByHand.App_Code
             }
         }
 
-        public void changeImageBox(ImageBox captureImageBox)
+        public void ChangeImageBox(ImageBox captureImageBox)
         {
             this.captureImageBox = captureImageBox;
         }
 
-        public void setBackgroundImage(Bitmap sourceBitmap)
+        public void SetBackgroundImage(Bitmap sourceBitmap)
         {
             Rectangle captureRect = new Rectangle(0, 0, sourceBitmap.Width, sourceBitmap.Height);
             BitmapData bitmapData = sourceBitmap.LockBits(captureRect, ImageLockMode.ReadWrite, sourceBitmap.PixelFormat);
@@ -255,37 +253,19 @@ namespace MoveCursorByHand.App_Code
             return availableResolutions;
         }
 
-        public async void ChangeHandPosition(string pos)
+        public void ChangeHandPosition(string pos)
         {
             if (pos.Equals("Left") && leftHandPos != true)
             {
                 leftHandPos = true;
-                templatePyr.Clear();
-                templatePyr = await Task.Run(() => fromLeftHandFilesAsync());
+                fastTemplateMatching.ChangeFastTemplateMatchingHandPos(false);       
             }
             else if (leftHandPos != false)
             {
                 leftHandPos = false;
-                templatePyr.Clear();
-                templatePyr = await Task.Run(() => fromRightHandFilesAsync());
+                fastTemplateMatching.ChangeFastTemplateMatchingHandPos(true);
             }
-        }
-
-        private void MouseMovement(int x1, int x2, int y1, int y2, Mat frame)
-        {
-            Point initialCursorPosition;
-            Native.GetCursorPos(out initialCursorPosition);
-            ScreenProperties screenProperties = new ScreenProperties();
-
-            double mouseSensitivity = 0.5; //0 < mouseSensitivity < 1
-            double resolutionDiffWidth = screenProperties.getWidth() / frame.Width;
-            double resolutionDiffHeight = screenProperties.getHeight() / frame.Height;
-
-            initialCursorPosition.X = Math.Min(Math.Max(0, initialCursorPosition.X + (int)(((x2 - x1) * resolutionDiffWidth) * (mouseSensitivity * 2.3))), screenProperties.getWidth());
-            initialCursorPosition.Y = Math.Min(Math.Max(0, initialCursorPosition.Y + (int)(((y2 - y1) * resolutionDiffHeight) * (mouseSensitivity * 2.3))), screenProperties.getHeight());
-
-            Native.SetCursorPos(initialCursorPosition.X, initialCursorPosition.Y);
-        }
+        }       
 
         private int CalcTilt(double m11, double m20, double m02)
         {
@@ -334,230 +314,6 @@ namespace MoveCursorByHand.App_Code
             return 0;
         }
 
-        private void NameFingers(Mat frame, Point centerPoint, int contourAxisAngle, ref List<Point> fingertipCoordinates)
-        {
-            fingertipNames.Clear();
-            for (int i = 0; i < 5; i++)
-            {
-                fingertipNames.Add(Finger.UNKNOWN);
-            }
-
-            LabelThumbIndex(fingertipCoordinates, ref fingertipNames, centerPoint, contourAxisAngle);
-            labelUnknownFingertips(ref fingertipNames);
-            if (leftHandPos)
-                fingertipNames.Reverse();
-            DrawFingertipNames(frame, fingertipCoordinates, fingertipNames);
-        }
-
-        private void LabelThumbIndex(List<Point> fingertipCoordinates, ref List<Finger> fingertipNames, Point centerPoint, int contourAxisAngle)
-        {
-            indexFound = false;
-            thumbFound = false;
-            int i = Math.Min(fingertipCoordinates.Count - 1, 4);
-            while (i >= 0)
-            {
-                int xOffset = fingertipCoordinates[i].X - centerPoint.X;
-                int yOffset = centerPoint.Y - fingertipCoordinates[i].Y;
-                double theta = Math.Atan2(yOffset, xOffset);
-                int angleTips = (int)Math.Round(theta * (180.0 / Math.PI));
-                int angle = angleTips + (90 - contourAxisAngle);
-                angle = Math.Abs(angle);
-
-                //Console.WriteLine("Angle: " + angle);
-
-                if (!leftHandPos)
-                {
-                    if (count_defects == 5)
-                    {
-                        if (angle <= 130 && angle > 60 && !indexFound)
-                        {
-                            indexFound = true;
-                            fingertipNames[i] = Finger.INDEX;
-
-                            //Console.WriteLine("Index Angle: " + angle);
-                        }
-
-                        if (angle <= 200 && angle > 120 && !thumbFound)
-                        {
-                            thumbFound = true;
-                            fingertipNames[i] = Finger.THUMB;
-
-                            //Console.WriteLine("Thumb Angle: " + angle);
-                        }
-                    }
-                    else
-                    {
-                        if (angle <= 150 && angle > 120 && !indexFound)
-                        {
-                            indexFound = true;
-                            fingertipNames[i] = Finger.INDEX;
-
-                            //Console.WriteLine("Index Angle: " + angle);
-                        }
-
-                        else if (angle <= 200 && angle > 150 && !thumbFound)
-                        {
-                            thumbFound = true;
-                            fingertipNames[i] = Finger.THUMB;
-
-                            //Console.WriteLine("Thumb Angle: " + angle);
-                        }
-                    }
-                }
-                else
-                {
-                    if (count_defects == 5)
-                    {
-                        if (angle <= 130 && angle > 60 && !indexFound)
-                        {
-                            indexFound = true;
-                            fingertipNames[i] = Finger.INDEX;
-
-                            //Console.WriteLine("Index Angle: " + angle);
-                        }
-
-                        if (angle <= 200 && angle > 120 && !thumbFound)
-                        {
-                            thumbFound = true;
-                            fingertipNames[i] = Finger.THUMB;
-
-                            //Console.WriteLine("Thumb Angle: " + angle);
-                        }
-                    }
-                    else
-                    {
-                        if ((angle <= 150 && angle > 50) && !indexFound && (i == 3 || i == 1 || i == 0))
-                        {
-                            indexFound = true;
-                            fingertipNames[i] = Finger.INDEX;
-
-                            //Console.WriteLine("Index Angle: " + angle);
-                        }
-
-                        else if (angle <= 200 && angle > 150 && !thumbFound && (i == 4 || i == 0))
-                        {
-                            thumbFound = true;
-                            fingertipNames[i] = Finger.THUMB;
-
-                            //Console.WriteLine("Thumb Angle: " + angle);
-                        }
-                    }
-                }
-
-
-                i--;
-            }
-        }
-
-        private void labelUnknownFingertips(ref List<Finger> fingertipNames)
-        {
-            int i = 0;
-            while (i < fingertipNames.Count && fingertipNames[i] == Finger.UNKNOWN)
-            {
-                i++;
-            }
-            if (i == fingertipNames.Count)
-            {
-                return;
-            }
-
-            Finger finger = fingertipNames[i];
-            LabelUnknownFingertipsByOrder(ref fingertipNames, i, finger, "forward");
-            if (count_defects == 5) //WHEN NO UNKNOWNS FOUND
-                LabelUnknownFingertipsByOrder(ref fingertipNames, i, finger, "backward");
-        }
-
-        private void LabelUnknownFingertipsByOrder(ref List<Finger> fingertipNames, int i, Finger finger, string order)
-        {
-            if (order.Equals("backward") && i > 0)
-            {
-                i--;
-                while (i >= 0 && finger != Finger.UNKNOWN)
-                {
-                    if (fingertipNames[i] == Finger.UNKNOWN)
-                    {
-                        finger = finger.getPrevious();
-
-                        if (!fingertipNames.Contains(finger))
-                        {
-                            fingertipNames[i] = finger;
-                        }
-                        else
-                        {
-                            int containedIndex = fingertipNames.IndexOf(finger);
-                            fingertipNames[containedIndex] = Finger.UNKNOWN;
-                            fingertipNames[i] = finger;
-                        }
-                    }
-                    else
-                    {
-                        finger = fingertipNames[i];
-                    }
-
-                    i--;
-                }
-            }
-            else if (i < fingertipNames.Count - 1)
-            {
-                i++;
-                while (i < fingertipNames.Count && finger != Finger.UNKNOWN)
-                {
-                    if (fingertipNames[i] == Finger.UNKNOWN)
-                    {
-                        finger = finger.getNext();
-
-                        if (!fingertipNames.Contains(finger))
-                        {
-                            fingertipNames[i] = finger;
-                        }
-                        else
-                        {
-                            int containedIndex = fingertipNames.IndexOf(finger);
-                            fingertipNames[containedIndex] = Finger.UNKNOWN;
-                            fingertipNames[i] = finger;
-                        }
-                    }
-                    else
-                    {
-                        finger = fingertipNames[i];
-                    }
-
-                    i++;
-                }
-            }
-        }
-
-        private void DrawFingertipNames(Mat frame, List<Point> fingertipCoordinates, List<Finger> fingertipNames)
-        {
-            int rev = Math.Min(fingertipCoordinates.Count, 5);
-            if (rev == 5 || !leftHandPos) //NO UNKNOWN FINGERS
-            {
-                for (int i = 0; i < Math.Min(fingertipCoordinates.Count, 5); i++)
-                {
-                    if (fingertipNames[i] != Finger.UNKNOWN)
-                        CvInvoke.PutText(frame, fingertipNames[i].ToString(), fingertipCoordinates[i], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
-                }
-            }
-            else
-            {
-                int diff = fingertipNames.Count - Math.Min(fingertipCoordinates.Count, 5);
-                int skippedIndex = 0;
-
-                for (int i = 4; (i - diff) >= 0; i--)
-                {
-                    if (fingertipNames[i] != Finger.UNKNOWN)
-                        CvInvoke.PutText(frame, fingertipNames[i].ToString(), fingertipCoordinates[i - diff + skippedIndex], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
-                    else
-                        skippedIndex++;
-                }
-                for (int i = skippedIndex - 1; i >= 0; i--)
-                {
-                    if (fingertipNames[i] != Finger.UNKNOWN)
-                        CvInvoke.PutText(frame, fingertipNames[i + (diff - 1)].ToString(), fingertipCoordinates[i], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
-                }
-            }
-        }
-
         private void DrawAnalyzeRectangle(ref Mat frame)
         {
             CvInvoke.Rectangle(frame, new Rectangle(0, analyzeRectYPos, frame.Width, 7), new MCvScalar(0, 0, 255), -2);
@@ -576,117 +332,7 @@ namespace MoveCursorByHand.App_Code
             {
                 isAscending = true;
             }
-        }
-
-        private async Task<List<TemplatePyramid>> fromLeftHandFilesAsync()
-        {
-            List<TemplatePyramid> list = new List<TemplatePyramid>();
-            string curDir = Directory.GetParent(Directory.GetCurrentDirectory()).FullName;
-            curDir = curDir.Substring(0, curDir.LastIndexOf("\\"));
-            string resDir = Path.Combine(curDir, "Resources", "LeftHand_BW");
-            string[] files = Directory.GetFiles(resDir, "*.jpg");
-
-            object synObj = new object();
-            await Task.Run(() =>
-            {
-                Parallel.ForEach(files, delegate (string file)
-                {
-                    Gray<byte>[,] preparedBWImage = ImageIO.LoadGray(file).Clone();
-
-                    try
-                    {
-                        TemplatePyramid tp = TemplatePyramid.CreatePyramidFromPreparedBWImage(preparedBWImage, new FileInfo(file).Name);
-                        lock (synObj)
-                        {
-                            list.Add(tp);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                });
-            });
-
-            return list;
-        }
-
-        private async Task<List<TemplatePyramid>> fromRightHandFilesAsync()
-        {
-            List<TemplatePyramid> list = new List<TemplatePyramid>();
-            string curDir = Directory.GetParent(Directory.GetCurrentDirectory()).FullName;
-            curDir = curDir.Substring(0, curDir.LastIndexOf("\\"));
-            string resDir = Path.Combine(curDir, "Resources", "RightHand_BW");
-            string[] files = Directory.GetFiles(resDir, "*.jpg");
-
-            object synObj = new object();
-            await Task.Run(() =>
-            {
-                Parallel.ForEach(files, delegate (string file)
-                {
-                    Gray<byte>[,] preparedBWImage = ImageIO.LoadGray(file).Clone();
-
-                    try
-                    {
-                        TemplatePyramid tp = TemplatePyramid.CreatePyramidFromPreparedBWImage(preparedBWImage, new FileInfo(file).Name);
-                        lock (synObj)
-                        {
-                            list.Add(tp);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                });
-            });
-
-            return list;
-        }
-
-        private async void InitializeFastTemplateMatching()
-        {
-            templatePyr = await Task.Run(() => fromRightHandFilesAsync());
-        }
-
-        private List<Match> findHandByFastTemplateMatching(Mat bgrFrame)
-        {
-            if (templatePyr != null)
-            {
-                int downSampleCount = 1;
-                Mat scaledBgrFrame = new Mat();
-                scaledBgrFrame = bgrFrame.Clone();
-                int threshold = 100;
-                if (isActivated)
-                    threshold = 200;
-                while (scaledBgrFrame.Height > threshold) //80X80 or 160x160 is good
-                {
-                    CvInvoke.PyrDown(scaledBgrFrame, scaledBgrFrame);
-                    downSampleCount *= 2;
-                }
-
-                List<Match> bestMatchList = new List<Match>();
-                List<Match> matchList = new List<Match>();            
-                LinearizedMapPyramid linMapPyr = LinearizedMapPyramid.CreatePyramid(scaledBgrFrame.Bitmap.ToArray().ToGray());
-                matchList = linMapPyr.MatchTemplates(templatePyr, 88);
-                IList<Cluster<Match>> matchGroups = new MatchClustering(0).Group(matchList.ToArray());
-
-                Match downSampleInfo = new Match();
-                downSampleInfo.Score = downSampleCount;
-                bestMatchList.Insert(0, downSampleInfo);
-
-                foreach (var item in matchGroups)
-                {
-                    bestMatchList.Add(item.Representative);
-                }
-
-                return bestMatchList;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        }       
 
         private void ProcessFrame(object sender, EventArgs arg)
         {
@@ -699,7 +345,6 @@ namespace MoveCursorByHand.App_Code
             Point centerPoint = new Point();
             MCvMoments mcv = new MCvMoments();
             Rectangle boundingRect = new Rectangle();
-            Rectangle handRectangleFastTemplate = new Rectangle(-1, -1, -1, -1);
             try
             {
                 milliSeconds = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -769,14 +414,20 @@ namespace MoveCursorByHand.App_Code
                         if (handWidth != -1 && handHeight != -1 && handLocX != -1 && handLocY != -1
                             && handSize.Width != -1 && handSize.Height != -1 && handPoint.X != -1 && handPoint.Y != -1)
                         {
-                            if(croppedFrame.Width < frame.Width && croppedFrame.Height < frame.Height)
+                            if (!leftHandPos)
                             {
                                 handLocX = handLocX + (frame.Width) - (frame.Width / 26) - (frame.Width / 2);
                                 handLocY = handLocY + (frame.Width / 26);
-                                handPoint = new Point(handLocX, handLocY);
-                                handSize = new Size(handWidth, handHeight);
-                                camShiftTrackWindow = new Rectangle(handPoint, handSize);
                             }
+                            else
+                            {
+                                handLocX = handLocX + (frame.Width / 26);
+                                handLocY = handLocY + (frame.Width / 26);
+                            }
+
+                            handPoint = new Point(handLocX, handLocY);
+                            handSize = new Size(handWidth, handHeight);
+                            camShiftTrackWindow = new Rectangle(handPoint, handSize);
 
                             CvInvoke.CvtColor(croppedFrame, hsvCroppedFrame, ColorConversion.Bgr2Hsv);
                             CvInvoke.CalcBackProject(new VectorOfMat(new Mat[] { hsvCroppedFrame }), new int[] { 0 }, camShiftHist, camShiftBackProject, new float[] { 0, 180 }, 1);
@@ -788,8 +439,8 @@ namespace MoveCursorByHand.App_Code
                     }                   
                    
                     //FAST TEMPLATE MATCHING METHOD
-                    List<Match> bestRepresentatives = findHandByFastTemplateMatching(croppedFrame);
-                    if (bestRepresentatives != null)
+                    List<Match> bestRepresentatives = fastTemplateMatching.FindHandByFastTemplateMatching(ref croppedFrame, isActivated);
+                    if (bestRepresentatives != null && bestRepresentatives.Count > 1)
                     {
                         bool skipFirstOne = true;
                         int downSampleCount = 1;
@@ -837,7 +488,22 @@ namespace MoveCursorByHand.App_Code
                         else
                             analyzeRectFrame = new Mat(frame, new Rectangle(frame.Width - (frame.Width / 26) - (frame.Width / 2), frame.Width / 26, frame.Width / 2, frame.Width / 2));
 
-                        DrawAnalyzeRectangle(ref analyzeRectFrame);
+                        DrawAnalyzeRectangle(ref analyzeRectFrame);                       
+                    }
+
+                    //STOP OVERLAY HAND PICTURE FROM BLINKING
+                    if (HANDFOUND || isActivated)
+                    {
+                        Action action = new Action(() => { handOverlayPictureBox.Visible = false; });
+                        handOverlayPictureBox.Invoke(action);
+                    }
+                    else
+                    {
+                        if (!handOverlayPictureBox.Visible)
+                        {
+                            Action action = new Action(() => { handOverlayPictureBox.Visible = true; });
+                            handOverlayPictureBox.Invoke(action);
+                        }
                     }
 
                     //HAAR CASCADE METHOD FOR DETECTING CLOSED HAND
@@ -850,29 +516,7 @@ namespace MoveCursorByHand.App_Code
                     }
 
                     Rectangle[] detectedHaarCascadeRectangles = haarCascade.DetectMultiScale(detectHandPalmClosedFrame, 1.4, 4);
-                    handPalmClosedCount = detectedHaarCascadeRectangles.Count();
-
-                    if (HANDFOUND)
-                    {
-                        if (x1 == -1 && y1 == -1)
-                        {
-                            x1 = handRectangleFastTemplate.X + (handRectangleFastTemplate.Width / 2);
-                            y1 = handRectangleFastTemplate.Y + (handRectangleFastTemplate.Height / 2);
-                        }
-                        else if (x2 != x1 || y2 != y1)
-                        {
-                            x2 = handRectangleFastTemplate.X + (handRectangleFastTemplate.Width / 2);
-                            y2 = handRectangleFastTemplate.Y + (handRectangleFastTemplate.Height / 2);
-
-                            if (isActivated)
-                                MouseMovement(x1, x2, y1, y2, frame);
-                        }
-                    }
-                    else
-                    {
-                        x1 = -1;
-                        y1 = -1;
-                    }
+                    handPalmClosedCount = detectedHaarCascadeRectangles.Count();                    
 
                     if (handPalmClosedCount > 0)
                     {
@@ -1011,7 +655,7 @@ namespace MoveCursorByHand.App_Code
                         double m02 = CvInvoke.cvGetCentralMoment(ref mcv, 0, 2);
                         int contourAxisAngle = CalcTilt(m11, m20, m02);
                         fingertipCoordinates = fingertipCoordinates.OrderBy(p => p.X).ToList();
-                        NameFingers(croppedFrame, centerPoint, contourAxisAngle, ref fingertipCoordinates);
+                        fingertipRecognizer.NameFingers(ref croppedFrame, centerPoint, contourAxisAngle, ref fingertipCoordinates, leftHandPos, count_defects);
 
                         CvInvoke.Circle(croppedFrame, centerPoint, 1, new MCvScalar(0, 0, 255), 10);
                         CvInvoke.Circle(croppedFrame, centerPoint, boundingRect.Width / 4, new MCvScalar(0, 255, 0), 3);
@@ -1027,12 +671,12 @@ namespace MoveCursorByHand.App_Code
                     }
 
                     //ACTIVATING MOUSE CONTROL BY MINIMIZING WINDOW AFTER HOLDING HAND IN FRONT OF WEBCAM FOR 5 SECONDS
-                    if (count_defects > 4 && HANDFOUND)
+                    if (!isActivated && count_defects > 4 && HANDFOUND)
                     {
                         activate = true;
                         timeDelay = DateTime.Now.Second - pastTime;
                     }
-                    else if (count_defects < 1 && !HANDFOUND)
+                    else if (isActivated && count_defects < 1 && !HANDFOUND)
                     {
                         activate = false;
                         timeDelay = DateTime.Now.Second - pastTime;
@@ -1072,11 +716,126 @@ namespace MoveCursorByHand.App_Code
                             timeDelay = 0;
                             activate = false;
                         }                        
-                    }                    
+                    }
+
+                    //MOUSE CONTROL WITH INDEX FINGER 
+                    if (isActivated && fingertipCoordinates.Count > 3 && HANDFOUND)
+                    {
+                        int fingerCount = 0;
+                        if (x1 == -1 && y1 == -1)
+                        {
+                            if (leftHandPos)
+                            {
+                                foreach (Finger finger in fingertipNames)
+                                {
+                                    if(finger == Finger.INDEX)
+                                    {
+                                        x1 = fingertipCoordinates[fingerCount].X;
+                                        y1 = fingertipCoordinates[fingerCount].Y;
+
+                                        if (!leftHandPos)
+                                        {
+                                            x1 = x1 + handRectangleFastTemplate.X;
+                                            y1 = y1 + handRectangleFastTemplate.Y;
+                                        }
+                                        else
+                                        {
+                                            x1 = x1 + handRectangleFastTemplate.X;
+                                            y1 = y1 + handRectangleFastTemplate.Y;
+                                        }
+                                    }
+                                    fingerCount++;
+                                }                               
+                            }
+                            else
+                            {
+                                foreach (Finger finger in fingertipNames)
+                                {
+                                    if (finger == Finger.INDEX)
+                                    {
+                                        x1 = fingertipCoordinates[fingerCount].X;
+                                        y1 = fingertipCoordinates[fingerCount].Y;
+
+                                        if (!leftHandPos)
+                                        {
+                                            x1 = x1 + handRectangleFastTemplate.X;
+                                            y1 = y1 + handRectangleFastTemplate.Y;
+                                        }
+                                        else
+                                        {
+                                            x1 = x1 + handRectangleFastTemplate.X;
+                                            y1 = y1 + handRectangleFastTemplate.Y;
+                                        }
+                                    }
+                                    fingerCount++;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (leftHandPos)
+                            {
+                                foreach (Finger finger in fingertipNames)
+                                {
+                                    if (finger == Finger.INDEX)
+                                    {
+                                        x2 = fingertipCoordinates[fingerCount].X;
+                                        y2 = fingertipCoordinates[fingerCount].Y;
+
+                                        if (!leftHandPos)
+                                        {
+                                            x2 = x2 + handRectangleFastTemplate.X;
+                                            y2 = y2 + handRectangleFastTemplate.Y;
+                                        }
+                                        else
+                                        {
+                                            x2 = x2 + handRectangleFastTemplate.X;
+                                            y2 = y2 + handRectangleFastTemplate.Y;
+                                        }
+                                    }
+                                    fingerCount++;
+                                }
+                            }
+                            else
+                            {
+                                foreach (Finger finger in fingertipNames)
+                                {
+                                    if (finger == Finger.INDEX)
+                                    {
+                                        x2 = fingertipCoordinates[fingerCount].X;
+                                        y2 = fingertipCoordinates[fingerCount].Y;
+
+                                        if (!leftHandPos)
+                                        {
+                                            x2 = x2 + handRectangleFastTemplate.X;
+                                            y2 = y2 + handRectangleFastTemplate.Y;
+                                        }
+                                        else
+                                        {
+                                            x2 = x2 + handRectangleFastTemplate.X;
+                                            y2 = y2 + handRectangleFastTemplate.Y;
+                                        }
+                                    }
+                                    fingerCount++;
+                                }
+                            }
+
+                            mouseMovement.MoveMouse(x1, x2, y1, y2, ref frame);
+
+                            x1 = -1;
+                            y1 = -1;
+                        }
+                    }
+                    else
+                    {
+                        x1 = -1;
+                        y1 = -1;
+                    }
 
                     captureImageBox.Image = frame;
 
-                    Console.WriteLine("Detected FingerTip Number: " + count_defects);
+                    Console.WriteLine("Detected FingerTip Number: " + count_defects + " Finger Index [X1]: " + x1 + " [X2]: " + x2
+                        + " [Y1]: " + y1 + " [Y2]: " + y2);
 
                     //CALCULATIONS FOR DELAY (DELAY IS NEEDED TO BE PUT TO DRAW FRAMES TO THE SCREEN CORRECTLY)
                     milliSeconds2 = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
@@ -1199,6 +958,11 @@ namespace MoveCursorByHand.App_Code
         public bool isActive()
         {
             return captureInProgress;
+        }
+
+        public Size getFrameSize()
+        {
+            return new Size((int)width, (int)height);
         }
     }
 }
