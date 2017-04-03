@@ -120,6 +120,7 @@ namespace MoveCursorByHand
             captureImageBox.HorizontalScrollBar.Visible = false;
             captureImageBox.Width = (int)(Width / 1.81);
 
+            captureImageBox.Visible = false;
             loadingGIFPicureBox.Visible = true;
 
             //Fills the listview elements with video capture device names

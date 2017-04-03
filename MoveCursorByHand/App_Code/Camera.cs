@@ -781,6 +781,12 @@ namespace MoveCursorByHand.App_Code
 
                     frameRate = Math.Abs(1000 / milliSecondsDiff);
 
+                    if (firstFrameCaptured)
+                    {
+                        Action action = new Action(() => { captureImageBox.Visible = true; });
+                        captureImageBox.Invoke(action);
+                    }
+
                     if (!isActivated && firstFrameCaptured)
                     {
                         firstFrameCaptured = false;
