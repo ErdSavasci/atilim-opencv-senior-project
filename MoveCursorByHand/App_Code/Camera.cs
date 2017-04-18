@@ -577,7 +577,7 @@ namespace MoveCursorByHand.App_Code
                         Mat defects = handRecognizer.GetDefects();
                         Matrix<int> matrix = handRecognizer.GetMatrixOfDefects();                      
                         CvInvoke.DrawContours(filteredCroppedFrame, contours, -1, new MCvScalar(0, 255, 0), 3);
-                        fingertipDetector.DetectFingers(defects, matrix, maxResult, ref count_defects, handPalmClosedCount, leftHandPos, fingertipCoordinates, ref croppedFrame);
+                        fingertipCoordinates = fingertipDetector.DetectFingers(defects, matrix, maxResult, ref count_defects, handPalmClosedCount, leftHandPos, ref croppedFrame);
                     }
 
                     //TO FIND THE THUMB INDEXES AND NAMES-----------------------------------------------------------
@@ -588,7 +588,7 @@ namespace MoveCursorByHand.App_Code
                         double m02 = CvInvoke.cvGetCentralMoment(ref mcv, 0, 2);
                         int contourAxisAngle = CalcTilt(m11, m20, m02);
                         fingertipCoordinates = fingertipCoordinates.OrderBy(p => p.X).ToList();
-                        fingertipRecognizer.NameFingers(ref croppedFrame, centerPoint, contourAxisAngle, ref fingertipCoordinates, leftHandPos, count_defects);
+                        fingertipNames = fingertipRecognizer.NameFingers(ref croppedFrame, centerPoint, contourAxisAngle, fingertipCoordinates, leftHandPos, count_defects);
 
                         CvInvoke.Circle(croppedFrame, centerPoint, 1, new MCvScalar(0, 0, 255), 10);
                         CvInvoke.Circle(croppedFrame, centerPoint, boundingRect.Width / 4, new MCvScalar(0, 255, 0), 3);
@@ -604,12 +604,12 @@ namespace MoveCursorByHand.App_Code
                     }
 
                     //ACTIVATING MOUSE CONTROL BY MINIMIZING WINDOW AFTER HOLDING HAND IN FRONT OF WEBCAM FOR 5 SECONDS
-                    if (!isActivated && count_defects > 4 && HANDFOUND)
+                    if (!isActivated && HANDFOUND)
                     {
                         activate = true;
                         timeDelay = DateTime.Now.Second - pastTime;
                     }
-                    else if (isActivated && count_defects < 1 && !HANDFOUND)
+                    else if (isActivated && count_defects < 1 && handPalmClosedCount > 0)
                     {
                         activate = false;
                         timeDelay = DateTime.Now.Second - pastTime;
@@ -621,9 +621,15 @@ namespace MoveCursorByHand.App_Code
                         timeDelay = 0;
                     }
 
-                    if (timeDelay >= 10)
+                    if (timeDelay >= 55) //If hand is hold for 5 seconds or more
                     {
-                        if (isActivated && !activate)
+                        if (!isActivated && activate)
+                        {
+                            isActivated = true;
+                            firstFrameCaptured = true;
+                            ActivateMouseControl();                         
+                        }
+                        else if (isActivated && !activate)
                         {
                             isActivated = false;
                             DeactivateMouseControl();
@@ -637,22 +643,9 @@ namespace MoveCursorByHand.App_Code
                         timeDelay = 0;
                         activate = false;
                     }
-                    else if (timeDelay >= 5) //If hand is hold for 5 seconds or more
-                    {
-                        if (!isActivated && activate)
-                        {
-                            isActivated = true;
-                            firstFrameCaptured = true;
-                            ActivateMouseControl();
-
-                            pastTime = DateTime.Now.Second;
-                            timeDelay = 0;
-                            activate = false;
-                        }                        
-                    }
 
                     //MOUSE CONTROL WITH INDEX FINGER 
-                    if (isActivated && fingertipCoordinates.Count > 3 && HANDFOUND)
+                    if (isActivated && HANDFOUND)
                     {
                         int fingerCount = 0;
                         if (x1 == -1 && y1 == -1)

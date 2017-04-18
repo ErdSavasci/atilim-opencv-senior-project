@@ -9,14 +9,18 @@ namespace MoveCursorByHand.App_Code
 {
     class FingertipDetector
     {
+        private List<Point> fingertipCoordinates;
+
         public FingertipDetector()
         {
-
+            fingertipCoordinates = new List<Point>();
         }
 
-        public void DetectFingers(Mat defects, Matrix<int> matrix, VectorOfPoint maxResult, ref int count_defects, int handPalmClosedCount,
-            bool leftHandPos, List<Point> fingertipCoordinates, ref Mat croppedFrame)
+        public List<Point> DetectFingers(Mat defects, Matrix<int> matrix, VectorOfPoint maxResult, ref int count_defects, int handPalmClosedCount,
+            bool leftHandPos, ref Mat croppedFrame)
         {
+            fingertipCoordinates.Clear();
+
             for (int i = 0; i < defects.Rows; i++)
             {
                 int s = 0, e = 0, f = 0, d = 0;
@@ -70,6 +74,8 @@ namespace MoveCursorByHand.App_Code
                 }
                 CvInvoke.Line(croppedFrame, start, end, new MCvScalar(0, 255, 0), 2);
             }
+
+            return fingertipCoordinates;
         }       
     }
 }

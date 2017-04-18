@@ -120,7 +120,8 @@ namespace MoveCursorByHand
                 }
                 catch (Exception ex)
                 {
-                    Application.Exit(null);
+                    Console.WriteLine(ex.Message);
+                    Application.Exit(null);                   
                 }
             }
         }

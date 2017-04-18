@@ -198,6 +198,7 @@ namespace MoveCursorByHand
             }
             catch(Exception ex)
             {
+                Console.WriteLine(ex.Message);
                 Application.Exit(null);
             }
         }
@@ -375,6 +376,7 @@ namespace MoveCursorByHand
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine(ex.Message);
                     Application.Exit(null);
                 }
             }
