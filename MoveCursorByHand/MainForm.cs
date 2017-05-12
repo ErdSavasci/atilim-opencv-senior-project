@@ -25,12 +25,12 @@ namespace MoveCursorByHand
 
         public MainForm()
         {
-            InitializeComponent();  
+            InitializeComponent();
         }
 
         public static MainForm GetInstance()
         {
-            if(mainFormInstance == null)
+            if (mainFormInstance == null)
             {
                 mainFormInstance = new MainForm();
             }
@@ -64,7 +64,6 @@ namespace MoveCursorByHand
             macroComboBox.Items.Add("Control Key");
             macroComboBox.Items.Add("Alt Key");
             macroComboBox.Items.Add("AltGr Key");
-            macroComboBox.Items.Add("AltGr Key");
             macroComboBox.Items.Add("Up Key");
             macroComboBox.Items.Add("Down Key");
             macroComboBox.Items.Add("Right Key");
@@ -80,7 +79,6 @@ namespace MoveCursorByHand
             macroComboBox2.Items.Add("Shift Key");
             macroComboBox2.Items.Add("Control Key");
             macroComboBox2.Items.Add("Alt Key");
-            macroComboBox2.Items.Add("AltGr Key");
             macroComboBox2.Items.Add("AltGr Key");
             macroComboBox2.Items.Add("Up Key");
             macroComboBox2.Items.Add("Down Key");
@@ -98,7 +96,6 @@ namespace MoveCursorByHand
             macroComboBox3.Items.Add("Control Key");
             macroComboBox3.Items.Add("Alt Key");
             macroComboBox3.Items.Add("AltGr Key");
-            macroComboBox3.Items.Add("AltGr Key");
             macroComboBox3.Items.Add("Up Key");
             macroComboBox3.Items.Add("Down Key");
             macroComboBox3.Items.Add("Right Key");
@@ -113,7 +110,7 @@ namespace MoveCursorByHand
             MaterialSkinManager materialSkinManager = MaterialSkinManager.Instance;
             materialSkinManager.AddFormToManage(this);
             materialSkinManager.Theme = MaterialSkinManager.Themes.LIGHT;
-            materialSkinManager.ColorScheme = new ColorScheme(Primary.Blue700, Primary.Blue900, Primary.Blue500, Accent.Green700, TextShade.WHITE);                       
+            materialSkinManager.ColorScheme = new ColorScheme(Primary.Blue700, Primary.Blue900, Primary.Blue500, Accent.Green700, TextShade.WHITE);
 
             captureImageBox.SizeMode = PictureBoxSizeMode.StretchImage;
             captureImageBox.VerticalScrollBar.Visible = false;
@@ -138,13 +135,13 @@ namespace MoveCursorByHand
 
             handOverlayThread = new Thread(() =>
             {
-                while (camera == null);
-                while (!camera.isActive());
+                while (camera == null) ;
+                while (!camera.isActive()) ;
                 SetLocationAndSizeOfHandPictureBox();
             });
             handOverlayThread.IsBackground = true;
             handOverlayThread.Start();
-            ChangeOpacityRepeatedly();           
+            ChangeOpacityRepeatedly();
 
             //Initially check right radio button
             rightRadioButton.Checked = true;
@@ -173,7 +170,7 @@ namespace MoveCursorByHand
                 control.Invoke(action);
             });
             t.IsBackground = true;
-            if(control.Width > 0 && control.Height > 0)
+            if (control.Width > 0 && control.Height > 0)
                 t.Start();
         }
 
@@ -196,7 +193,7 @@ namespace MoveCursorByHand
             {
                 Environment.Exit(Environment.ExitCode);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
                 Application.Exit(null);
@@ -216,12 +213,17 @@ namespace MoveCursorByHand
             captureImageBox.VerticalScrollBar.Size = new Size(0, 0);
             captureImageBox.HorizontalScrollBar.Size = new Size(0, 0);
             captureImageBox.Height = (int)(Height / 1.22);
-            captureImageBox.Width = (int) (Width / 1.81);
+            captureImageBox.Width = (int)(Width / 1.81);
 
             optionsPictureBox.Size = new Size(103, 92);
-            optionsPictureBox.Location = new Point(leftRadioButton.Location.X - 5, leftRadioButton.Location.Y - 25); 
-            
-            if(WindowState == FormWindowState.Maximized && !maximizedTransparent)
+            optionsPictureBox.Location = new Point(leftRadioButton.Location.X - 5, leftRadioButton.Location.Y - 25);
+
+            if (camera != null)
+            {
+                SetLocationAndSizeOfHandPictureBox();
+            }
+
+            if (WindowState == FormWindowState.Maximized && !maximizedTransparent)
             {
                 MakeTransparent(label1);
                 MakeTransparent(label2);
@@ -231,13 +233,8 @@ namespace MoveCursorByHand
                 MakeTransparent(loadingGIFPicureBox);
                 normalTransparent = false;
                 maximizedTransparent = true;
-
-                if (camera != null)
-                {
-                    SetLocationAndSizeOfHandPictureBox();
-                }
-            } 
-            else if(WindowState == FormWindowState.Normal && !normalTransparent)
+            }
+            else if (WindowState == FormWindowState.Normal && !normalTransparent)
             {
                 MakeTransparent(label1);
                 MakeTransparent(label2);
@@ -247,11 +244,6 @@ namespace MoveCursorByHand
                 MakeTransparent(loadingGIFPicureBox);
                 normalTransparent = true;
                 maximizedTransparent = false;
-
-                if(camera != null)
-                {
-                    SetLocationAndSizeOfHandPictureBox();
-                }
             }
         }
 
@@ -261,7 +253,7 @@ namespace MoveCursorByHand
             {
                 while (!abort)
                 {
-                   if(camera != null && camera.isActive())
+                    if (camera != null && camera.isActive())
                     {
                         ChangeOpacityOfHandPictureBox(opacityValue);
                         Thread.Sleep(100);
@@ -279,7 +271,7 @@ namespace MoveCursorByHand
                             isAscending = true;
                         else if (opacityValue >= 0.20)
                             isAscending = false;
-                    }                    
+                    }
                 }
             });
             changeThread.IsBackground = true;
@@ -294,7 +286,7 @@ namespace MoveCursorByHand
             colormatrix.Matrix33 = (float)opacityValue;
             ImageAttributes imgAttribute = new ImageAttributes();
             imgAttribute.SetColorMatrix(colormatrix, ColorMatrixFlag.Default, ColorAdjustType.Bitmap);
-            graphics.DrawImage(handOverlayBitmap, new Rectangle(0, 0, handOverlayBitmap.Width, handOverlayBitmap.Height), 0, 0, handOverlayBitmap.Width, handOverlayBitmap.Height, GraphicsUnit.Pixel, imgAttribute);           
+            graphics.DrawImage(handOverlayBitmap, new Rectangle(0, 0, handOverlayBitmap.Width, handOverlayBitmap.Height), 0, 0, handOverlayBitmap.Width, handOverlayBitmap.Height, GraphicsUnit.Pixel, imgAttribute);
             Action action = new Action(() => { handOverlayPictureBox.Image = newImage; });
             handOverlayPictureBox.Invoke(action);
             graphics.Dispose();
@@ -312,14 +304,17 @@ namespace MoveCursorByHand
                 Size frameSize = camera.getFrameSize();
                 double widthDiff = (double)captureImageBox.Width / frameSize.Width;
                 double heightDiff = (double)captureImageBox.Height / frameSize.Height;
-               
-                int extraAreaX = (int)((frameSize.Width / 2 * widthDiff) - (frameSize.Width / 3 * widthDiff));
-                int extraAreaY = (int)((frameSize.Width / 2 * heightDiff) - (frameSize.Width / 3 * heightDiff));
-                int croppedFrameX = frameSize.Width - (frameSize.Width / 26) - (frameSize.Width / 2) + extraAreaX;
-                int croppedFrameY = frameSize.Width / 26 + extraAreaY;              
+                int croppedFrameX = frameSize.Width - (frameSize.Width / 26) - (frameSize.Width / 2);
+                int croppedFrameY = frameSize.Width / 26;
+                int croppedFrameWidth = frameSize.Width / 2;
+                int croppedFrameHeight = frameSize.Height / 2;
 
-                handOverlayPictureBox.Location = new Point((int)(croppedFrameX * widthDiff), (int)(croppedFrameY * heightDiff));
-                handOverlayPictureBox.Size = new Size((int)(frameSize.Width / 3 * widthDiff), (int)(frameSize.Width / 3 * heightDiff));
+                handOverlayPictureBox.Size = new Size((int)(frameSize.Width / 2 * widthDiff), (int)(frameSize.Height / 2 * heightDiff));
+
+                int extraAreaX = (int)((croppedFrameWidth / 40) * widthDiff);
+                int extraAreaY = (int)((croppedFrameHeight / 8) * heightDiff);      
+
+                handOverlayPictureBox.Location = new Point((int)(croppedFrameX * widthDiff + extraAreaX), (int)(croppedFrameY * heightDiff + extraAreaY));
             }
             else if (camera.isActive())
             {
@@ -330,7 +325,7 @@ namespace MoveCursorByHand
                 int extraAreaX = (int)((frameSize.Width / 2 * widthDiff) - (frameSize.Width / 3 * widthDiff));
                 int extraAreaY = (int)((frameSize.Width / 2 * heightDiff) - (frameSize.Width / 3 * heightDiff));
                 int croppedFrameX = frameSize.Width / 26 + extraAreaX;
-                int croppedFrameY = frameSize.Width / 26 + extraAreaY;               
+                int croppedFrameY = frameSize.Width / 26 + extraAreaY;
 
                 handOverlayPictureBox.Location = new Point((int)(croppedFrameX * widthDiff), (int)(croppedFrameY * heightDiff));
                 handOverlayPictureBox.Size = new Size((int)(frameSize.Width / 3 * widthDiff), (int)(frameSize.Width / 3 * heightDiff));
@@ -338,7 +333,7 @@ namespace MoveCursorByHand
         }
 
         private void MainForm_Resize(object sender, EventArgs e)
-        {            
+        {
             if (WindowState == FormWindowState.Minimized)
             {
                 if (camera.isActive())
@@ -348,7 +343,7 @@ namespace MoveCursorByHand
 
                 Hide();
                 MinimizedForm form = Application.OpenForms.OfType<MinimizedForm>().Count() > 0 ? Application.OpenForms.OfType<MinimizedForm>().First() : new MinimizedForm();
-                form.TopMost = true;                
+                form.TopMost = true;
                 camera.SetIsActivated(false);
                 form.SetCamera(camera);
                 form.Show();
@@ -383,9 +378,9 @@ namespace MoveCursorByHand
         }
 
         private void MainForm_VisibleChanged(object sender, EventArgs e)
-        {           
+        {
             ScreenProperties screenProperties = new ScreenProperties(this);
-            Location = new Point(screenProperties.getWidth() / 2 - (Width / 2), screenProperties.getHeight() / 2 - (Height / 2));         
+            Location = new Point(screenProperties.getWidth() / 2 - (Width / 2), screenProperties.getHeight() / 2 - (Height / 2));
         }
 
         private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
@@ -403,7 +398,7 @@ namespace MoveCursorByHand
 
         private void rightRadioButton_CheckedChanged(object sender, EventArgs e)
         {
-            if(camera != null)
+            if (camera != null)
             {
                 camera.ChangeHandPosition("Right");
             }
@@ -428,21 +423,22 @@ namespace MoveCursorByHand
         {
             Devices devices = new Devices();
 
-            if(devices.Count() > 1 && camera.getActiveDeviceIndex() != e.ItemIndex)
+            if (devices.Count() > 1 && camera.getActiveDeviceIndex() != e.ItemIndex)
             {
                 loadingGIFPicureBox.Tag = e.ItemIndex;
                 loadingGIFPicureBox.Visible = true;
-                timer1.Start(); 
-            }           
+                timer1.Start();
+            }
         }
 
         public void clearLoadingAnimationPictureBox()
         {
             Thread clearThread = new Thread(() =>
             {
-                Action clearImageAction = () => {
+                Action clearImageAction = () =>
+                {
                     loadingGIFPicureBox.Visible = false;
-                    loadingGIFPicureBox.Image = null;                
+                    loadingGIFPicureBox.Image = null;
                 };
                 loadingGIFPicureBox.Invoke(clearImageAction);
             });
@@ -459,7 +455,7 @@ namespace MoveCursorByHand
 
         private void MainForm_Shown(object sender, EventArgs e)
         {
-            
+
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -475,7 +471,7 @@ namespace MoveCursorByHand
             Devices devices = new Devices();
             camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag, handOverlayPictureBox, loadingGIFPicureBox);
             camera.setFirstFrameCaptured(true);
-            SetCamera(camera);           
+            SetCamera(camera);
         }
     }
 }
