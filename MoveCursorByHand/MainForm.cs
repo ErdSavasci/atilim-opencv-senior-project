@@ -321,14 +321,17 @@ namespace MoveCursorByHand
                 Size frameSize = camera.getFrameSize();
                 double widthDiff = (double)captureImageBox.Width / frameSize.Width;
                 double heightDiff = (double)captureImageBox.Height / frameSize.Height;
+                int croppedFrameX = frameSize.Width / 26;
+                int croppedFrameY = frameSize.Width / 26;
+                int croppedFrameWidth = frameSize.Width / 2;
+                int croppedFrameHeight = frameSize.Height / 2;
 
-                int extraAreaX = (int)((frameSize.Width / 2 * widthDiff) - (frameSize.Width / 3 * widthDiff));
-                int extraAreaY = (int)((frameSize.Width / 2 * heightDiff) - (frameSize.Width / 3 * heightDiff));
-                int croppedFrameX = frameSize.Width / 26 + extraAreaX;
-                int croppedFrameY = frameSize.Width / 26 + extraAreaY;
+                handOverlayPictureBox.Size = new Size((int)(frameSize.Width / 2 * widthDiff), (int)(frameSize.Height / 2 * heightDiff));
 
-                handOverlayPictureBox.Location = new Point((int)(croppedFrameX * widthDiff), (int)(croppedFrameY * heightDiff));
-                handOverlayPictureBox.Size = new Size((int)(frameSize.Width / 3 * widthDiff), (int)(frameSize.Width / 3 * heightDiff));
+                int extraAreaX = (int)((croppedFrameWidth / 40) * widthDiff);
+                int extraAreaY = (int)((croppedFrameHeight / 8) * heightDiff);
+
+                handOverlayPictureBox.Location = new Point((int)(croppedFrameX * widthDiff + extraAreaX), (int)(croppedFrameY * heightDiff + extraAreaY));
             }
         }
 
@@ -393,6 +396,7 @@ namespace MoveCursorByHand
             if (camera != null)
             {
                 camera.ChangeHandPosition("Left");
+                SetLocationAndSizeOfHandPictureBox();
             }
         }
 
@@ -401,6 +405,7 @@ namespace MoveCursorByHand
             if (camera != null)
             {
                 camera.ChangeHandPosition("Right");
+                SetLocationAndSizeOfHandPictureBox();
             }
         }
 

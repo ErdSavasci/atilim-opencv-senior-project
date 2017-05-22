@@ -25,6 +25,8 @@ namespace MoveCursorByHand.App_Code
             }
 
             LabelThumbIndex(fingertipCoordinates, ref fingertipNames, centerPoint, contourAxisAngle, leftHandPos, count_defects);
+            if (leftHandPos)
+                fingertipNames.Reverse();
             labelUnknownFingertips(ref fingertipNames, count_defects);
             if (leftHandPos)
                 fingertipNames.Reverse();
@@ -41,14 +43,20 @@ namespace MoveCursorByHand.App_Code
             i = 0;
             while (i <= fingertipCoordinates.Count - 1)
             {
+                /*if (leftHandPos)
+                { //0-1-2-3-4
+                    i = i - (2 * (i - 2));
+
+                    if (i > fingertipCoordinates.Count - 1)
+                        i = Math.Abs(fingertipCoordinates.Count - 1 - i);
+                }*/
+
                 int xOffset = fingertipCoordinates[i].X - centerPoint.X;
                 int yOffset = centerPoint.Y - fingertipCoordinates[i].Y;
                 double theta = Math.Atan2(yOffset, xOffset);
                 int angleTips = (int)Math.Round(theta * (180.0 / Math.PI));
                 int angle = angleTips + (90 - contourAxisAngle);
                 angle = Math.Abs(angle);
-
-                Console.WriteLine("Angle " + i + ": " + angle);
 
                 if (!leftHandPos)
                 {
@@ -62,7 +70,7 @@ namespace MoveCursorByHand.App_Code
                             //Console.WriteLine("Index Angle: " + angle);
                         }
 
-                        if (angle <= 270 && angle > 240 && !thumbFound)
+                        if (angle <= 270 && angle > 220 && !thumbFound)
                         {
                             thumbFound = true;
                             fingertipNames[i] = Finger.THUMB;
@@ -72,17 +80,19 @@ namespace MoveCursorByHand.App_Code
                     }
                     else
                     {
-                        if (angle <= 240 && angle > 210 && !indexFound && (i == 3 || i == 1 || i == 0))
+                        if (angle <= 230 && angle > 190 && !indexFound)
                         {
                             indexFound = true;
+
                             fingertipNames[i] = Finger.INDEX;
 
                             //Console.WriteLine("Index Angle: " + angle);
                         }
 
-                        else if (angle <= 270 && angle > 240 && !thumbFound && (i == 4 || i == 0))
+                        else if (angle <= 270 && angle > 230 && !thumbFound)
                         {
                             thumbFound = true;
+
                             fingertipNames[i] = Finger.THUMB;
 
                             //Console.WriteLine("Thumb Angle: " + angle);
@@ -93,17 +103,19 @@ namespace MoveCursorByHand.App_Code
                 {
                     if (count_defects == 5)
                     {
-                        if (angle <= 130 && angle > 60 && !indexFound)
+                        if (angle <= 165 && angle > 150 && !indexFound)
                         {
                             indexFound = true;
+
                             fingertipNames[i] = Finger.INDEX;
 
                             //Console.WriteLine("Index Angle: " + angle);
                         }
 
-                        if (angle <= 270 && angle > 240 && !thumbFound)
+                        if (angle <= 135 && angle > 110 && !thumbFound)
                         {
                             thumbFound = true;
+
                             fingertipNames[i] = Finger.THUMB;
 
                             //Console.WriteLine("Thumb Angle: " + angle);
@@ -111,17 +123,19 @@ namespace MoveCursorByHand.App_Code
                     }
                     else
                     {
-                        if ((angle <= 150 && angle > 50) && !indexFound && (i == 3 || i == 1 || i == 0))
+                        if ((angle <= 165 && angle > 145) && !indexFound)
                         {
                             indexFound = true;
+
                             fingertipNames[i] = Finger.INDEX;
 
                             //Console.WriteLine("Index Angle: " + angle);
                         }
 
-                        else if (angle <= 270 && angle > 240 && !thumbFound && (i == 4 || i == 0))
+                        else if (angle <= 140 && angle > 105 && !thumbFound)
                         {
                             thumbFound = true;
+
                             fingertipNames[i] = Finger.THUMB;
 
                             //Console.WriteLine("Thumb Angle: " + angle);
@@ -129,6 +143,15 @@ namespace MoveCursorByHand.App_Code
                     }
                 }
 
+                /*if (leftHandPos)
+                {
+                    i = Math.Abs(i - 4);
+
+                    if (i > fingertipCoordinates.Count - 1)
+                        i = Math.Abs(fingertipCoordinates.Count - 1 - i);
+                }*/
+
+                Console.WriteLine("Angle " + i + ": " + angle);
 
                 i++;
             }
@@ -238,7 +261,12 @@ namespace MoveCursorByHand.App_Code
                 for (int i = skippedIndex - 1; i >= 0; i--)
                 {
                     if (fingertipNames[i] != Finger.UNKNOWN)
-                        CvInvoke.PutText(frame, fingertipNames[i + (diff - 1)].ToString(), fingertipCoordinates[i], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
+                    {
+                        if(fingertipNames[i + (diff - 1)] != Finger.UNKNOWN)
+                            CvInvoke.PutText(frame, fingertipNames[i + (diff - 1)].ToString(), fingertipCoordinates[i], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
+                        else
+                            CvInvoke.PutText(frame, fingertipNames[i].ToString(), fingertipCoordinates[i], FontFace.HersheySimplex, 1.3, new MCvScalar(255, 255, 255));
+                    }
                 }
             }
         }

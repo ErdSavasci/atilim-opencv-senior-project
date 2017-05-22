@@ -13,7 +13,7 @@ namespace MoveCursorByHand.App_Code
 
         public void MoveMouse(int x1, int x2, int y1, int y2, ref Mat frame)
         {
-            Point initialCursorPosition;
+            LPPoint initialCursorPosition;
             Native.GetCursorPos(out initialCursorPosition);
             ScreenProperties screenProperties = new ScreenProperties();
 
@@ -26,6 +26,8 @@ namespace MoveCursorByHand.App_Code
                 initialCursorPosition.X = Math.Min(Math.Max(0, initialCursorPosition.X + (int)(((x2 - x1) * resolutionDiffWidth) * (mouseSensitivity * 2))), screenProperties.getWidth());
                 initialCursorPosition.Y = Math.Min(Math.Max(0, initialCursorPosition.Y + (int)(((y2 - y1) * resolutionDiffHeight) * (mouseSensitivity * 2))), screenProperties.getHeight());
             }
+
+            Console.WriteLine("Mouse X: " + initialCursorPosition.X + "/ Mouse Y: " + initialCursorPosition.Y);
 
             Native.SetCursorPos(initialCursorPosition.X, initialCursorPosition.Y);
         }

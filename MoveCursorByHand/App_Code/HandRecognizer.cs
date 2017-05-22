@@ -18,7 +18,7 @@ namespace MoveCursorByHand.App_Code
 
         }
 
-        public VectorOfPoint RecognizeHand(VectorOfVectorOfPoint contours, bool leftHandPos, ref Mat croppedFrame)
+        public VectorOfPoint RecognizeHand(VectorOfVectorOfPoint contours, bool leftHandPos)
         {
             double maxArea = CvInvoke.ContourArea(contours[0]);
             maxAreaIndex = 0;

@@ -154,7 +154,9 @@
     <Compile Include="App_Code\Finger.cs" />
     <Compile Include="App_Code\FingertipDetector.cs" />
     <Compile Include="App_Code\FingertipRecognizer.cs" />
+    <Compile Include="App_Code\Globals.cs" />
     <Compile Include="App_Code\HandRecognizer.cs" />
+    <Compile Include="App_Code\LPPoint.cs" />
     <Compile Include="App_Code\MouseMovement.cs" />
     <Compile Include="App_Code\Native.cs" />
     <Compile Include="App_Code\Resolution.cs" />

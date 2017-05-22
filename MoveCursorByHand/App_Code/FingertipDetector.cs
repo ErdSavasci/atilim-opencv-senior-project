@@ -4,6 +4,7 @@ using Emgu.CV.Util;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace MoveCursorByHand.App_Code
 {
@@ -58,7 +59,7 @@ namespace MoveCursorByHand.App_Code
                         count_defects = 0;
                     }
 
-                    if (count_defects > 0)
+                    if (count_defects > 0 && fingertipCoordinates.Count < 5)
                     {
                         if (!leftHandPos)
                         {
@@ -72,7 +73,13 @@ namespace MoveCursorByHand.App_Code
                         }
                     }
                 }
-                CvInvoke.Line(croppedFrame, start, end, new MCvScalar(0, 255, 0), 2);
+                /*CvInvoke.Line(croppedFrame, start, end, new MCvScalar(0, 255, 0), 2);*/
+
+                /*if (fingertipCoordinates.Count > 0 && fingertipCoordinates.Select(g => g.X).Max() - fingertipCoordinates.Select(g => g.X).Min() < frameWidth &&
+                           fingertipCoordinates.Select(g => g.Y).Max() - fingertipCoordinates.Select(g => g.Y).Min() < frameWidth) //THRESHOLD VALUE: 350 (MAX DISTANCE BETWEEN FINGERS)
+                {
+                    dontDraw = false;
+                }*/             
             }
 
             return fingertipCoordinates;
