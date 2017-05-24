@@ -161,6 +161,7 @@
             this.macroComboBox3.Size = new System.Drawing.Size(112, 29);
             this.macroComboBox3.TabIndex = 10;
             this.macroComboBox3.UseSelectable = true;
+            this.macroComboBox3.SelectedIndexChanged += new System.EventHandler(this.macroComboBox3_SelectedIndexChanged);
             // 
             // metroLink
             // 
@@ -200,6 +201,7 @@
             this.macroComboBox2.Size = new System.Drawing.Size(112, 29);
             this.macroComboBox2.TabIndex = 15;
             this.macroComboBox2.UseSelectable = true;
+            this.macroComboBox2.SelectedIndexChanged += new System.EventHandler(this.macroComboBox2_SelectedIndexChanged);
             // 
             // macroComboBox
             // 
@@ -212,6 +214,7 @@
             this.macroComboBox.Size = new System.Drawing.Size(112, 29);
             this.macroComboBox.TabIndex = 16;
             this.macroComboBox.UseSelectable = true;
+            this.macroComboBox.SelectedIndexChanged += new System.EventHandler(this.macroComboBox_SelectedIndexChanged);
             // 
             // label1
             // 

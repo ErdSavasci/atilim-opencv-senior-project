@@ -60,52 +60,55 @@ namespace MoveCursorByHand
             handOverlayPictureBox.BackColor = Color.Transparent;
 
             macroComboBox.Items.Add("ESC Key");
-            macroComboBox.Items.Add("Shift Key");
-            macroComboBox.Items.Add("Control Key");
-            macroComboBox.Items.Add("Alt Key");
-            macroComboBox.Items.Add("AltGr Key");
-            macroComboBox.Items.Add("Up Key");
-            macroComboBox.Items.Add("Down Key");
-            macroComboBox.Items.Add("Right Key");
-            macroComboBox.Items.Add("Left Key");
-            macroComboBox.Items.Add("Prt Scr Key");
-            macroComboBox.Items.Add("Num Lock Key");
-            macroComboBox.Items.Add("Caps Lock Key");
-            macroComboBox.Items.Add("Scroll Lock Key");
-            macroComboBox.Items.Add("Page Up Key");
-            macroComboBox.Items.Add("Page Down Key");
+            macroComboBox.Items.Add("LSHIFT Key");
+            macroComboBox.Items.Add("LCTRL Key");
+            macroComboBox.Items.Add("LALT Key");
+            macroComboBox.Items.Add("RALT Key");
+            macroComboBox.Items.Add("UP Key");
+            macroComboBox.Items.Add("DOWN Key");
+            macroComboBox.Items.Add("RIGHT Key");
+            macroComboBox.Items.Add("LEFT Key");
+            macroComboBox.Items.Add("PRTSRC Key");
+            macroComboBox.Items.Add("NUMLOCK Key");
+            macroComboBox.Items.Add("CAPSLOCK Key");
+            macroComboBox.Items.Add("SCROLLLOCK Key");
+            macroComboBox.Items.Add("PGUP Key");
+            macroComboBox.Items.Add("PDN Key");
+            macroComboBox.Items.Add("APPSKEY Key");
 
             macroComboBox2.Items.Add("ESC Key");
-            macroComboBox2.Items.Add("Shift Key");
-            macroComboBox2.Items.Add("Control Key");
-            macroComboBox2.Items.Add("Alt Key");
-            macroComboBox2.Items.Add("AltGr Key");
-            macroComboBox2.Items.Add("Up Key");
-            macroComboBox2.Items.Add("Down Key");
-            macroComboBox2.Items.Add("Right Key");
-            macroComboBox2.Items.Add("Left Key");
-            macroComboBox2.Items.Add("Prt Scr Key");
-            macroComboBox2.Items.Add("Num Lock Key");
-            macroComboBox2.Items.Add("Caps Lock Key");
-            macroComboBox2.Items.Add("Scroll Lock Key");
-            macroComboBox2.Items.Add("Page Up Key");
-            macroComboBox2.Items.Add("Page Down Key");
+            macroComboBox2.Items.Add("LSHIFT Key");
+            macroComboBox2.Items.Add("LCTRL Key");
+            macroComboBox2.Items.Add("LALT Key");
+            macroComboBox2.Items.Add("RALT Key");
+            macroComboBox2.Items.Add("UP Key");
+            macroComboBox2.Items.Add("DOWN Key");
+            macroComboBox2.Items.Add("RIGHT Key");
+            macroComboBox2.Items.Add("LEFT Key");
+            macroComboBox2.Items.Add("PRTSRC Key");
+            macroComboBox2.Items.Add("NUMLOCK Key");
+            macroComboBox2.Items.Add("CAPSLOCK Key");
+            macroComboBox2.Items.Add("SCROLLLOCK Key");
+            macroComboBox2.Items.Add("PGUP Key");
+            macroComboBox2.Items.Add("PDN Key");
+            macroComboBox2.Items.Add("APPSKEY Key");
 
             macroComboBox3.Items.Add("ESC Key");
-            macroComboBox3.Items.Add("Shift Key");
-            macroComboBox3.Items.Add("Control Key");
-            macroComboBox3.Items.Add("Alt Key");
-            macroComboBox3.Items.Add("AltGr Key");
-            macroComboBox3.Items.Add("Up Key");
-            macroComboBox3.Items.Add("Down Key");
-            macroComboBox3.Items.Add("Right Key");
-            macroComboBox3.Items.Add("Left Key");
-            macroComboBox3.Items.Add("Prt Scr Key");
-            macroComboBox3.Items.Add("Num Lock Key");
-            macroComboBox3.Items.Add("Caps Lock Key");
-            macroComboBox3.Items.Add("Scroll Lock Key");
-            macroComboBox3.Items.Add("Page Up Key");
-            macroComboBox3.Items.Add("Page Down Key");
+            macroComboBox3.Items.Add("LSHIFT Key");
+            macroComboBox3.Items.Add("LCTRL Key");
+            macroComboBox3.Items.Add("LALT Key");
+            macroComboBox3.Items.Add("RALT Key");
+            macroComboBox3.Items.Add("UP Key");
+            macroComboBox3.Items.Add("DOWN Key");
+            macroComboBox3.Items.Add("RIGHT Key");
+            macroComboBox3.Items.Add("LEFT Key");
+            macroComboBox3.Items.Add("PRTSRC Key");
+            macroComboBox3.Items.Add("NUMLOCK Key");
+            macroComboBox3.Items.Add("CAPSLOCK Key");
+            macroComboBox3.Items.Add("SCROLLLOCK Key");
+            macroComboBox3.Items.Add("PGUP Key");
+            macroComboBox3.Items.Add("PDN Key");
+            macroComboBox3.Items.Add("APPSKEY Key");
 
             MaterialSkinManager materialSkinManager = MaterialSkinManager.Instance;
             materialSkinManager.AddFormToManage(this);
@@ -130,13 +133,13 @@ namespace MoveCursorByHand
                 cameraIndex = 0;
             }
 
-            camera = new Camera(captureImageBox, devices.First(), cameraIndex, handOverlayPictureBox, loadingGIFPicureBox);
+            camera = new Camera(captureImageBox, devices.First(), cameraIndex, handOverlayPictureBox, loadingGIFPicureBox, new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
             camera.Start();
 
             handOverlayThread = new Thread(() =>
             {
                 while (camera == null) ;
-                while (!camera.isActive()) ;
+                while (!camera.IsActive()) ;
                 SetLocationAndSizeOfHandPictureBox();
             });
             handOverlayThread.IsBackground = true;
@@ -183,7 +186,7 @@ namespace MoveCursorByHand
 
         private void exitButton_Click(object sender, EventArgs e)
         {
-            if (camera.isActive())
+            if (camera.IsActive())
             {
                 camera.Stop();
                 camera.ReleaseResources();
@@ -253,7 +256,7 @@ namespace MoveCursorByHand
             {
                 while (!abort)
                 {
-                    if (camera != null && camera.isActive())
+                    if (camera != null && camera.IsActive())
                     {
                         ChangeOpacityOfHandPictureBox(opacityValue);
                         Thread.Sleep(100);
@@ -299,9 +302,9 @@ namespace MoveCursorByHand
                 this.Invoke(new MethodInvoker(SetLocationAndSizeOfHandPictureBox));
             }
 
-            if (rightRadioButton.Checked && camera.isActive())
+            if (rightRadioButton.Checked && camera.IsActive())
             {
-                Size frameSize = camera.getFrameSize();
+                Size frameSize = camera.GetFrameSize();
                 double widthDiff = (double)captureImageBox.Width / frameSize.Width;
                 double heightDiff = (double)captureImageBox.Height / frameSize.Height;
                 int croppedFrameX = frameSize.Width - (frameSize.Width / 26) - (frameSize.Width / 2);
@@ -316,9 +319,9 @@ namespace MoveCursorByHand
 
                 handOverlayPictureBox.Location = new Point((int)(croppedFrameX * widthDiff + extraAreaX), (int)(croppedFrameY * heightDiff + extraAreaY));
             }
-            else if (camera.isActive())
+            else if (camera.IsActive())
             {
-                Size frameSize = camera.getFrameSize();
+                Size frameSize = camera.GetFrameSize();
                 double widthDiff = (double)captureImageBox.Width / frameSize.Width;
                 double heightDiff = (double)captureImageBox.Height / frameSize.Height;
                 int croppedFrameX = frameSize.Width / 26;
@@ -339,7 +342,7 @@ namespace MoveCursorByHand
         {
             if (WindowState == FormWindowState.Minimized)
             {
-                if (camera.isActive())
+                if (camera.IsActive())
                 {
                     camera.Pause();
                 }
@@ -360,7 +363,7 @@ namespace MoveCursorByHand
         {
             abort = true;
 
-            if (camera.isActive())
+            if (camera.IsActive())
             {
                 camera.Stop();
                 camera.ReleaseResources();
@@ -428,7 +431,7 @@ namespace MoveCursorByHand
         {
             Devices devices = new Devices();
 
-            if (devices.Count() > 1 && camera.getActiveDeviceIndex() != e.ItemIndex)
+            if (devices.Count() > 1 && camera.GetActiveDeviceIndex() != e.ItemIndex)
             {
                 loadingGIFPicureBox.Tag = e.ItemIndex;
                 loadingGIFPicureBox.Visible = true;
@@ -463,10 +466,25 @@ namespace MoveCursorByHand
 
         }
 
+        private void macroComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            camera.SetMacroComboBoxSelections(new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
+        }
+
+        private void macroComboBox2_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            camera.SetMacroComboBoxSelections(new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
+        }
+
+        private void macroComboBox3_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            camera.SetMacroComboBoxSelections(new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
+        }
+
         private void timer1_Tick(object sender, EventArgs e)
         {
             timer1.Stop();
-            if (camera.isActive())
+            if (camera.IsActive())
             {
                 camera.Stop();
                 camera.ReleaseResources();
@@ -474,8 +492,7 @@ namespace MoveCursorByHand
             }
 
             Devices devices = new Devices();
-            camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag, handOverlayPictureBox, loadingGIFPicureBox);
-            camera.setFirstFrameCaptured(true);
+            camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag, handOverlayPictureBox, loadingGIFPicureBox, new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
             SetCamera(camera);
         }
     }

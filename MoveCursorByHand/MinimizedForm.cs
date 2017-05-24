@@ -74,7 +74,7 @@ namespace MoveCursorByHand
 
         private void returnPictureBox_Click(object sender, EventArgs e)
         {
-            if (camera.isActive())
+            if (camera.IsActive())
             {
                 camera.Pause();
             }
@@ -106,7 +106,7 @@ namespace MoveCursorByHand
 
         private void MinimizedForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (camera.isActive())
+            if (camera.IsActive())
             {
                 camera.Stop();
                 camera.ReleaseResources();

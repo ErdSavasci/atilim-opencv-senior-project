@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace MoveCursorByHand.App_Code
 {
@@ -25,6 +26,15 @@ namespace MoveCursorByHand.App_Code
         internal static extern bool ClientToScreen(IntPtr hWnd, ref Point point);
 
         [DllImport("user32.dll")]
-        internal static extern bool GetCursorPos(out LPPoint lpPoint);      
+        internal static extern bool GetCursorPos(out LPPoint lpPoint);
+
+        [DllImport("user32.dll")]
+        internal static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        internal static extern int GetWindowText(IntPtr hWnd, StringBuilder lpString, int nMaxCount);
+
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        internal static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
     }
 }

@@ -151,7 +151,7 @@ namespace MoveCursorByHand.App_Code
                         i = Math.Abs(fingertipCoordinates.Count - 1 - i);
                 }*/
 
-                Console.WriteLine("Angle " + i + ": " + angle);
+                //Console.WriteLine("Angle " + i + ": " + angle);
 
                 i++;
             }
