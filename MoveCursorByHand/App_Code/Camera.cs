@@ -76,7 +76,7 @@ namespace MoveCursorByHand.App_Code
         private double maxAreaHSV = 0.0D;
         private bool readyToClick = false;
         private Cursor currentCursor;
-        private bool isFirstBigRect = true;
+        public bool isFirstBigRect = true;
 
         int boundaryWidth;
         int boundaryHeight;
@@ -85,8 +85,7 @@ namespace MoveCursorByHand.App_Code
 
         public RectangleF bigRectangle;
         public RectangleF detectedRectangle;
-        public Point bigRectangleCenter;
-        public Point detectedRectangleCenter;
+
 
         
 
@@ -99,7 +98,9 @@ namespace MoveCursorByHand.App_Code
             this.handOverlayPictureBox = handOverlayPictureBox;
             this.captureImageBox = captureImageBox;
             CvInvoke.UseOpenCL = true;
-       
+
+            
+
             deviceIndex = cameraIndex;
             
             currentCursor = new Cursor(Cursor.Current.Handle);
@@ -380,6 +381,7 @@ namespace MoveCursorByHand.App_Code
             {
                 Action action = new Action(() => { loadingGIFPicureBox.Visible = false; });
                 loadingGIFPicureBox.Invoke(action);
+                
             }
             
             HANDFOUND = false;
@@ -599,60 +601,18 @@ namespace MoveCursorByHand.App_Code
                             detectedRect.X = Math.Abs(croppedFrame.Width - detectedRect.X - detectedRect.Width);
                         CvInvoke.Rectangle(croppedFrame, detectedRect, new MCvScalar(255, 0, 0), 2);
                         Console.WriteLine(handPalmClosedCount + " Closed Hand Palm Found!!");
-                        
+                        SetCursorPos(getBigRectX(), getBigRectY());
+
                         //////////////////////////////////////////////////////////////////////
-                        
-
-                     //   CvInvoke.Rectangle(croppedFrame, detectedRect, new MCvScalar(255, 255, 0));
-
-                        
-                        float bigSize = 200;
-                     
-                        Point detectedRectCenter = new Point(detectedRect.X, detectedRect.Y);
-                       
-                        
-                 
                         detectedRectangle = new RectangleF(
-                                    detectedRect.X,
-                                    detectedRect.Y,
-                                    detectedRect.Height,
-                                    detectedRect.Width);
-                        
+                                    detectedRect.X ,
+                                    detectedRect.Y ,
+                                    250,
+                                    250);
+                        setBigRectSize((float)(detectedRect.Width * 1.5), (float)(detectedRect.Height * 1.5));
+                        setDetectRextXY((int)detectedRectangle.X * 3,(int)detectedRectangle.Y * 3);
 
-                        if (isFirstBigRect)
-                        {
-                             bigRectangle = new RectangleF(
-                                   detectedRectangle.X,
-                                   detectedRectangle.Y,
-                                   bigSize,
-                                   bigSize);
-
-                            MoveCursor(detectedRectangle, bigRectangle);
-
-                            isFirstBigRect = false;
-                        }
-
-                        else
-                        {
-                             bigRectangle = new RectangleF(
-                                   bigRectangle.X,
-                                   bigRectangle.Y,
-                                   bigSize,
-                                   bigSize);
-
-                            MoveCursor(detectedRectangle, bigRectangle);
-
-                        }
-                           
-                        
-                        
-                       
-
-
-                        
-                        
-                        
-
+                        MoveCursor(detectedRectangle, bigRectangle);
                         //////////////////////////////////
                     }
 
@@ -906,7 +866,6 @@ namespace MoveCursorByHand.App_Code
                         x1 = -1;
                         y1 = -1;
                     }
-
                     captureImageBox.Image = frame;
 
                     /*Console.WriteLine("Detected FingerTip Number: " + count_defects + " Finger Index [X1]: " + x1 + " [X2]: " + x2
@@ -1000,68 +959,86 @@ namespace MoveCursorByHand.App_Code
                 }));
             }
         }
-        /*
+        
+          
         public void FindBoundary(RectangleF detectedRectangle, RectangleF bigRectangle)
         {
+            boundaryWidth = Math.Abs(((int)bigRectangle.Width - (int)detectedRectangle.Width) / 2);
+            boundaryHeight = Math.Abs(((int)bigRectangle.Height - (int)detectedRectangle.Height) / 2);
 
-
-            int boundaryWidth = Math.Abs(((int)bigRectangle.Width - (int)detectedRectangle.Width) / 2);
-            int boundaryHeight = Math.Abs(((int)bigRectangle.Height - (int)detectedRectangle.Height) / 2);
-            int distanceX = Math.Abs((int)bigRectangle.X - (int)detectedRectangle.X);
-            int distanceY = Math.Abs((int)bigRectangle.Y - (int)detectedRectangle.Y);
-
-            Console.WriteLine(boundaryWidth + " , " + boundaryHeight + " , " + distanceX + " , " + distanceY);
+            distanceX = Math.Abs(getBigRectX() - getDetectedRectX());
+            distanceY = Math.Abs(getBigRectY() - getDetectedRectY());
         }
-        */
+        public void setBigRectXY(int x, int y)
+        {
+            bigRectangle.X = x;
+            bigRectangle.Y = y;
+        }
+        public int getBigRectX()
+        {
+            return (int)bigRectangle.X ;
+        }
+        public int getBigRectY()
+        {
+            return (int)bigRectangle.Y;
+        }
+
+        public int getDetectedRectX()
+        {
+            return (int)detectedRectangle.X;
+        }
+        public int getDetectedRectY()
+        {
+            return (int)detectedRectangle.Y;
+        }
+        public void setDetectRextXY(int x, int y)
+        {
+            detectedRectangle.X = x;
+            detectedRectangle.Y = y;
+        }
+
+        
+        public void setBigRectSize(float width, float height)
+        {
+            bigRectangle.Width = width;
+            bigRectangle.Height = height;
+        }
         public void MoveCursor(RectangleF detectedRectangle, RectangleF bigRectangle)
         {
             System.Drawing.Point p;
             GetCursorPos(out p);
-            Rectangle rect = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
-            
-            double heightRate = rect.Height / 400;
-            double widthRate = rect.Width / 560;
+            Console.WriteLine("Big Rectangle:      " + getBigRectX() + " , " + getBigRectY());
+            Console.WriteLine("Detected Rectangle: " + detectedRectangle);
+            FindBoundary(detectedRectangle, bigRectangle);
 
-            boundaryWidth = Math.Abs(((int)bigRectangle.Width - (int)detectedRectangle.Width) / 2);
-            boundaryHeight = Math.Abs(((int)bigRectangle.Height - (int)detectedRectangle.Height) / 2);
-            distanceX = Math.Abs((int)bigRectangleCenter.X - (int)detectedRectangleCenter.X);
-            distanceY = Math.Abs((int)bigRectangleCenter.Y - (int)detectedRectangleCenter.Y);
-            //   Console.WriteLine(boundaryWidth + " , " + boundaryHeight + " , " + distanceX + " , " + distanceY);
+            Console.WriteLine(distanceX + " , " + distanceY + " , " + boundaryWidth + " , " + boundaryHeight + "\n");
 
-            Console.WriteLine(bigRectangleCenter);
-            Console.WriteLine(detectedRectangleCenter);
             if ((int)detectedRectangle.X != 0 || (int)detectedRectangle.Y != 0)
             {
                 if (distanceX < boundaryWidth && distanceY < boundaryHeight)
                 {
-                    p.X = (int)bigRectangle.X * (int)widthRate;
-                    p.Y = (int)bigRectangle.Y * (int)heightRate;
+                    p.X = getBigRectX();
+                    p.Y = getBigRectY();
 
                     SetCursorPos(p.X, p.Y);
 
-                    bigRectangleCenter = new Point(p.X, p.Y);
-              //     detectedRectangleCenter = bigRectangleCenter;
-                    Console.WriteLine("In the Big Rectangle: p.X " + p.X + " p.Y " + p.Y);
+                   
+                    Console.WriteLine("In the Rectangle " + bigRectangle);
 
                 }
                 else
                 {
-                    p.X = (int)detectedRectangle.X * (int)widthRate;
-                    p.Y = (int)detectedRectangle.Y * (int)heightRate;
+                    p.X = getDetectedRectX();
+                    p.Y = getDetectedRectY();
 
                     SetCursorPos(p.X, p.Y);
-                    //     Console.WriteLine((int)detectedRectangle.Height + " in normal " + (int)detectedRectangle.Width);
-                    Console.WriteLine("Out of Big Rectangle: p.X " + p.X + " p.Y " + p.Y);
-                    
-        //            detectedRectangleCenter = new Point(p.X, p.Y);
-                    bigRectangleCenter = new Point(p.X, p.Y);
-
-                    bigRectangle.X = detectedRectangle.X;
-                    bigRectangle.Y = detectedRectangle.Y;
+                
+                    setBigRectXY(p.X,p.Y);
+                 
                 }
             }
-           
         }
+
 
         public void ReleaseResources()
         {
