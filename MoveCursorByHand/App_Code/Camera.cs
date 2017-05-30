@@ -18,8 +18,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using Accord.Extensions.Imaging.Algorithms.LINE2D;
-using System.Text;
-using RegExp = System.Text.RegularExpressions;
 
 namespace MoveCursorByHand.App_Code
 {
@@ -78,19 +76,34 @@ namespace MoveCursorByHand.App_Code
         private double maxAreaHSV = 0.0D;
         private bool readyToClick = false;
         private Cursor currentCursor;
-        private string[] macroComboBoxSelections;
+        private bool isFirstBigRect = true;
+
+        int boundaryWidth;
+        int boundaryHeight;
+        int distanceX;
+        int distanceY;
+
+        public RectangleF bigRectangle;
+        public RectangleF detectedRectangle;
+        public Point bigRectangleCenter;
+        public Point detectedRectangleCenter;
+
+        
+
+        
         #endregion
 
-        public Camera(ImageBox captureImageBox, DsDevice systemCamera, int cameraIndex, PictureBox handOverlayPictureBox, PictureBox loadingGIFPicureBox, string[] macroComboBoxSelections)
+        public Camera(ImageBox captureImageBox, DsDevice systemCamera, int cameraIndex, PictureBox handOverlayPictureBox, PictureBox loadingGIFPicureBox)
         {
             this.loadingGIFPicureBox = loadingGIFPicureBox;
             this.handOverlayPictureBox = handOverlayPictureBox;
             this.captureImageBox = captureImageBox;
             CvInvoke.UseOpenCL = true;
-
+       
             deviceIndex = cameraIndex;
-
+            
             currentCursor = new Cursor(Cursor.Current.Handle);
+
 
             if (cameraIndex != -1)
             {
@@ -189,10 +202,6 @@ namespace MoveCursorByHand.App_Code
                         MainForm mainForm = Application.OpenForms.OfType<MainForm>().First();
                         mainForm.clearLoadingAnimationPictureBox();
                         canStartCamera = true;
-
-                        //For MacroComboBox choices
-                        macroComboBoxSelections = new string[3];
-                        this.macroComboBoxSelections = macroComboBoxSelections;
                     });
                     prepareThread.IsBackground = true;
                     prepareThread.Start();
@@ -366,13 +375,13 @@ namespace MoveCursorByHand.App_Code
             //frame -> croppedFrame -> filteredCroppedFrame
             //All GUI operations are applied to croppedFrame
             //croppedFrame (BGR) / filteredCroppedFrame (BW)
-
+            
             if (firstFrameCaptured)
             {
                 Action action = new Action(() => { loadingGIFPicureBox.Visible = false; });
                 loadingGIFPicureBox.Invoke(action);
             }
-
+            
             HANDFOUND = false;
             count_defects = 0;
             Point centerPoint = new Point();
@@ -399,11 +408,11 @@ namespace MoveCursorByHand.App_Code
                             if (firstFrameCaptured)
                             {
                                 croppedFrame = new Mat(frame, new Rectangle(frame.Width / 26, frame.Width / 26, frame.Width / 2, (int)(frame.Height / 1.50)));
-                                firstFrameCaptured = false;
                             }
                             else
                             {
                                 croppedFrame = new Mat(frame, new Rectangle(0, 0, frame.Width, frame.Height));
+                                CvInvoke.PyrDown(croppedFrame, croppedFrame);
                             }
                         }
                     }
@@ -419,11 +428,11 @@ namespace MoveCursorByHand.App_Code
                             if (firstFrameCaptured)
                             {
                                 croppedFrame = new Mat(frame, new Rectangle(frame.Width - (frame.Width / 26) - (frame.Width / 2), frame.Width / 26, frame.Width / 2, (int)(frame.Height / 1.50)));
-                                firstFrameCaptured = false;
                             }
                             else
                             {
                                 croppedFrame = new Mat(frame, new Rectangle(0, 0, frame.Width, frame.Height));
+                                CvInvoke.PyrDown(croppedFrame, croppedFrame);
                             }
                         }
                     }
@@ -502,7 +511,7 @@ namespace MoveCursorByHand.App_Code
                         maxAreaHSV = 0.0D;
                     }
 
-                    //Console.WriteLine("Maximum HSV Area: " + maxAreaHSV);
+             //       Console.WriteLine("Maximum HSV Area: " + maxAreaHSV);
 
                     //BACKGROUND SUBTRACTOR METHOD
                     CvInvoke.BilateralFilter(croppedFrame, filteredCroppedFrame, 5, 50, 100);
@@ -513,13 +522,15 @@ namespace MoveCursorByHand.App_Code
                     CvInvoke.BitwiseAnd(filteredCroppedFrame, filteredCroppedFrame, filteredCroppedFrame, maskedCroppedFrame);
 
                     CvInvoke.CvtColor(filteredCroppedFrame, filteredCroppedFrame, ColorConversion.Bgr2Gray);
+           //         frame = filteredCroppedFrame;
+              //      captureImageBox.Image = filteredCroppedFrame;
 
                     if (!isActivated)
                     {
                         if (leftHandPos)
-                            analyzeRectFrame = new Mat(frame, new Rectangle(frame.Width / 26, frame.Width / 26, frame.Width / 2, (int)(frame.Height / 1.5)));
+                            analyzeRectFrame = new Mat(frame, new Rectangle(frame.Width / 26, frame.Width / 26, frame.Width / 2, frame.Width / 2));
                         else
-                            analyzeRectFrame = new Mat(frame, new Rectangle(frame.Width - (frame.Width / 26) - (frame.Width / 2), frame.Width / 26, frame.Width / 2, (int)(frame.Height / 1.5)));
+                            analyzeRectFrame = new Mat(frame, new Rectangle(frame.Width - (frame.Width / 26) - (frame.Width / 2), frame.Width / 26, frame.Width / 2, frame.Width / 2));
 
                         DrawAnalyzeRectangle(ref analyzeRectFrame);
                     }
@@ -543,7 +554,15 @@ namespace MoveCursorByHand.App_Code
                                     rectX = item.BoundingRect.X * downSampleCount - 50;
                                 handRectangleFastTemplate = new Rectangle(rectX, item.BoundingRect.Y * downSampleCount, Math.Min(item.BoundingRect.Width * downSampleCount + 50, croppedFrame.Width - item.BoundingRect.X), item.BoundingRect.Height * downSampleCount);
                                 CvInvoke.Rectangle(croppedFrame, handRectangleFastTemplate, new MCvScalar(0, 255, 255), 2);
-                            }
+                                /////////////////////////////////////////////////////////////////////////
+
+                                
+
+
+                                 ///////////////////////////////////////////////////////////////////////////////
+
+
+                                }
                             else
                             {
                                 downSampleCount = (int)item.Score > 0 ? (int)item.Score : 1;
@@ -555,20 +574,7 @@ namespace MoveCursorByHand.App_Code
                             HANDFOUND = true;
                         }
 
-                        int expectedWidth = frame.Width / 2;
-                        int expectedHeight = (int)(frame.Height / 1.5);
-
-                        int diffWidth = expectedWidth - (handRectangleFastTemplate.X + handRectangleFastTemplate.Width);
-                        int diffHeight = expectedHeight - (handRectangleFastTemplate.Y + handRectangleFastTemplate.Height);
-
-                        if (diffWidth < 0)
-                            diffWidth = 0;
-
-                        if (diffHeight < 0)
-                            diffHeight = 0;
-
-                        if (isActivated)
-                            croppedFrame = new Mat(croppedFrame, new Rectangle(Math.Max(0, handRectangleFastTemplate.X - diffWidth / 2), Math.Max(0, handRectangleFastTemplate.Y - diffHeight / 2), Math.Min(handRectangleFastTemplate.Width + diffWidth, croppedFrame.Width - handRectangleFastTemplate.X), Math.Min(handRectangleFastTemplate.Height + diffHeight, croppedFrame.Height - handRectangleFastTemplate.Y)));
+                        //croppedFrame = new Mat(croppedFrame, new Rectangle(handRectangleFastTemplate.X, handRectangleFastTemplate.Y, Math.Min(handRectangleFastTemplate.Width, croppedFrame.Width - handRectangleFastTemplate.X), Math.Min(handRectangleFastTemplate.Height + 500, croppedFrame.Height - handRectangleFastTemplate.Y)));
                     }
                  
                     //HAAR CASCADE METHOD FOR DETECTING CLOSED HAND
@@ -583,13 +589,71 @@ namespace MoveCursorByHand.App_Code
                     Rectangle[] detectedHaarCascadeRectangles = haarCascade.DetectMultiScale(detectHandPalmClosedFrame, 1.4, 4);
                     handPalmClosedCount = detectedHaarCascadeRectangles.Count();
 
+
+
                     if (handPalmClosedCount > 0)
                     {
                         Rectangle detectedRect = detectedHaarCascadeRectangles.First();
+
                         if (!leftHandPos)
                             detectedRect.X = Math.Abs(croppedFrame.Width - detectedRect.X - detectedRect.Width);
                         CvInvoke.Rectangle(croppedFrame, detectedRect, new MCvScalar(255, 0, 0), 2);
-                        //Console.WriteLine(handPalmClosedCount + " Closed Hand Palm Found!!");
+                        Console.WriteLine(handPalmClosedCount + " Closed Hand Palm Found!!");
+                        
+                        //////////////////////////////////////////////////////////////////////
+                        
+
+                     //   CvInvoke.Rectangle(croppedFrame, detectedRect, new MCvScalar(255, 255, 0));
+
+                        
+                        float bigSize = 200;
+                     
+                        Point detectedRectCenter = new Point(detectedRect.X, detectedRect.Y);
+                       
+                        
+                 
+                        detectedRectangle = new RectangleF(
+                                    detectedRect.X,
+                                    detectedRect.Y,
+                                    detectedRect.Height,
+                                    detectedRect.Width);
+                        
+
+                        if (isFirstBigRect)
+                        {
+                             bigRectangle = new RectangleF(
+                                   detectedRectangle.X,
+                                   detectedRectangle.Y,
+                                   bigSize,
+                                   bigSize);
+
+                            MoveCursor(detectedRectangle, bigRectangle);
+
+                            isFirstBigRect = false;
+                        }
+
+                        else
+                        {
+                             bigRectangle = new RectangleF(
+                                   bigRectangle.X,
+                                   bigRectangle.Y,
+                                   bigSize,
+                                   bigSize);
+
+                            MoveCursor(detectedRectangle, bigRectangle);
+
+                        }
+                           
+                        
+                        
+                       
+
+
+                        
+                        
+                        
+
+                        //////////////////////////////////
                     }
 
                     //THRESHOLD METHOD AND CONTOUR DETECTION
@@ -602,7 +666,7 @@ namespace MoveCursorByHand.App_Code
                     CvInvoke.FindContours(filteredCroppedFrame.Clone(), contours, hierarchy, RetrType.Tree, ChainApproxMethod.ChainApproxSimple);
 
                     //IF NO CONTOUR IS FOUND, THEN DON'T DO ANYTHING
-                    if ((contours.Size > 0 && maxAreaHSV > 10.0D) || HANDFOUND)
+                    if ((contours.Size > 0 && maxAreaHSV > 0.0D) || HANDFOUND)
                     {
                         //RECOGNIZE HAND AND DRAW BORDER
                         VectorOfPoint maxResult = handRecognizer.RecognizeHand(contours, leftHandPos);
@@ -625,7 +689,7 @@ namespace MoveCursorByHand.App_Code
                     }
 
                     //STOP OVERLAY HAND PICTURE FROM BLINKING
-                    if (HANDFOUND || isActivated || (contours.Size > 0 && maxAreaHSV > 10.0D))
+                    if (HANDFOUND || isActivated || (contours.Size > 0 && maxAreaHSV > 0.0D))
                     {
                         Action action = new Action(() => { handOverlayPictureBox.Visible = false; });
                         handOverlayPictureBox.Invoke(action);
@@ -640,7 +704,7 @@ namespace MoveCursorByHand.App_Code
                     }
 
                     //TO FIND THE THUMB INDEXES AND NAMES-----------------------------------------------------------
-                    if (count_defects > 0 && contours.Size > 0 && maxAreaHSV > 10.0D)
+                    if (count_defects > 0 && contours.Size > 0 && maxAreaHSV > 0.0D)
                     {
                         double m11 = CvInvoke.cvGetCentralMoment(ref mcv, 1, 1);
                         double m20 = CvInvoke.cvGetCentralMoment(ref mcv, 2, 0);
@@ -669,7 +733,7 @@ namespace MoveCursorByHand.App_Code
                         activate = true;
                         timeDelay = DateTime.Now.Second - pastTime;
                     }
-                    else if (isActivated && count_defects < 1 && handPalmClosedCount > 0)
+                    else if (isActivated && count_defects < 1/* && /*handPalmClosedCount > 0*/)
                     {
                         activate = false;
                         timeDelay = DateTime.Now.Second - pastTime;
@@ -681,7 +745,7 @@ namespace MoveCursorByHand.App_Code
                         timeDelay = 0;
                     }
 
-                    if (timeDelay >= 5) //If hand is hold for 5 seconds or more
+                    if (timeDelay >= 3) //If hand is hold for 5 seconds or more
                     {
                         if (!isActivated && activate)
                         {
@@ -692,7 +756,7 @@ namespace MoveCursorByHand.App_Code
                         else if (isActivated && !activate)
                         {
                             isActivated = false;
-                            DeactivateMouseControl();
+                      //      DeactivateMouseControl();
                             x1 = -1;
                             x2 = -1;
                             y1 = -1;
@@ -707,6 +771,7 @@ namespace MoveCursorByHand.App_Code
                     //MOUSE CONTROL WITH INDEX FINGER 
                     if (isActivated)
                     {
+                        /*
                         if (HANDFOUND)
                         {
                             readyToClick = true;
@@ -717,18 +782,12 @@ namespace MoveCursorByHand.App_Code
                                 {
                                     foreach (Finger finger in fingertipNames)
                                     {
-                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count && (fingerCount != 4))
+                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count)
                                         {
                                             x1 = fingertipCoordinates[fingerCount].X;
                                             y1 = fingertipCoordinates[fingerCount].Y;
                                         }
                                         fingerCount++;
-                                    }
-
-                                    if (x1 == -1 && y1 == -1)
-                                    {
-                                        x1 = handRectangleFastTemplate.Width / 5;
-                                        y1 = handRectangleFastTemplate.Height / 5;
                                     }
 
                                     x1 = x1 + handRectangleFastTemplate.X;
@@ -738,18 +797,12 @@ namespace MoveCursorByHand.App_Code
                                 {
                                     foreach (Finger finger in fingertipNames)
                                     {
-                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count && (fingerCount == 0 || fingerCount == 1))
+                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count)
                                         {
                                             x1 = fingertipCoordinates[fingerCount].X;
                                             y1 = fingertipCoordinates[fingerCount].Y;
                                         }
                                         fingerCount++;
-                                    }
-
-                                    if(x1 == -1 && y1 == -1)
-                                    {
-                                        x1 = handRectangleFastTemplate.Width / 5;
-                                        y1 = handRectangleFastTemplate.Height / 5;
                                     }
 
                                     x1 = x1 + handRectangleFastTemplate.X;
@@ -762,18 +815,12 @@ namespace MoveCursorByHand.App_Code
                                 {
                                     foreach (Finger finger in fingertipNames)
                                     {
-                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count && (fingerCount != 4))
+                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count)
                                         {
                                             x2 = fingertipCoordinates[fingerCount].X;
                                             y2 = fingertipCoordinates[fingerCount].Y;
                                         }
                                         fingerCount++;
-                                    }
-
-                                    if (x2 == -1 && y2 == -1)
-                                    {
-                                        x2 = handRectangleFastTemplate.Width / 5;
-                                        y2 = handRectangleFastTemplate.Height / 5;
                                     }
 
                                     x2 = x2 + handRectangleFastTemplate.X;
@@ -783,18 +830,12 @@ namespace MoveCursorByHand.App_Code
                                 {
                                     foreach (Finger finger in fingertipNames)
                                     {
-                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count && (fingerCount == 0 || fingerCount == 1))
+                                        if (finger == Finger.INDEX && fingerCount < fingertipCoordinates.Count)
                                         {
                                             x2 = fingertipCoordinates[fingerCount].X;
                                             y2 = fingertipCoordinates[fingerCount].Y;
                                         }
                                         fingerCount++;
-                                    }
-
-                                    if (x2 == -1 && y2 == -1)
-                                    {
-                                        x2 = handRectangleFastTemplate.Width / 5;
-                                        y2 = handRectangleFastTemplate.Height / 5;
                                     }
 
                                     x2 = x2 + handRectangleFastTemplate.X;
@@ -805,8 +846,6 @@ namespace MoveCursorByHand.App_Code
 
                                 x1 = -1;
                                 y1 = -1;
-                                x2 = -1;
-                                y2 = -1;                              
                             }
 
                             pastTime = DateTime.Now.Second;
@@ -828,7 +867,7 @@ namespace MoveCursorByHand.App_Code
                                         }
                                         else if (finger == Finger.LITTLE)
                                         {
-                                            if (leftMouseButtonClicked) //If the finger names are as INDEX-MIDDLE-RING-LITTLE
+                                            if (leftMouseButtonClicked)
                                                 rightMouseButtonClicked = false;
                                         }
                                     }
@@ -858,98 +897,9 @@ namespace MoveCursorByHand.App_Code
 
                                     readyToClick = false;
                                 }
-                                else if(count_defects == 1 && macroComboBoxSelections[0] != null)
-                                {
-                                    if (fingertipNames[0] == Finger.INDEX)
-                                    {
-                                        /*IntPtr activeWindow = Native.GetForegroundWindow();
-                                        StringBuilder activeWindowText = new StringBuilder(512);
-                                        Native.GetWindowText(activeWindow, activeWindowText, 512);
-                                        string activeWindowTextString = activeWindowText.ToString();
-
-                                        IntPtr expectedWindow = IntPtr.Zero;
-                                        foreach (Process process in Process.GetProcesses())
-                                        {
-                                            if (process.MainWindowTitle.Contains(activeWindowTextString))
-                                                expectedWindow = process.MainWindowHandle;
-                                        }
-                                        if (expectedWindow != IntPtr.Zero)
-                                            Native.SetForegroundWindow(expectedWindow);
-
-                                        Console.WriteLine(activeWindowTextString);*/
-
-                                        string macroKey = macroComboBoxSelections[0].Replace("Key", "");
-                                        macroKey = RegExp.Regex.Replace(macroKey, @"\s+", "");
-
-                                        Console.WriteLine(macroKey + " IS FIRED");
-
-                                        SendKeys.SendWait("{" + macroKey + "}");
-
-                                        readyToClick = false;
-                                    }
-                                }
-                                else if (count_defects == 2 && macroComboBoxSelections[1] != null)
-                                {
-                                    if((fingertipNames[0] == Finger.INDEX && fingertipNames[1] == Finger.MIDDLE) || (fingertipNames[0] == Finger.MIDDLE && fingertipNames[1] == Finger.INDEX))
-                                    {
-                                        /*IntPtr activeWindow = Native.GetForegroundWindow();
-                                        StringBuilder activeWindowText = new StringBuilder(512);
-                                        Native.GetWindowText(activeWindow, activeWindowText, 512);
-                                        string activeWindowTextString = activeWindowText.ToString();
-
-                                        IntPtr expectedWindow = IntPtr.Zero;
-                                        foreach (Process process in Process.GetProcesses())
-                                        {
-                                            if (process.MainWindowTitle.Contains(activeWindowTextString))
-                                                expectedWindow = process.MainWindowHandle;
-                                        }
-                                        if (expectedWindow != IntPtr.Zero)
-                                            Native.SetForegroundWindow(expectedWindow);
-
-                                        Console.WriteLine(activeWindowTextString);*/
-
-                                        string macroKey = macroComboBoxSelections[0].Replace("Key", "");
-                                        macroKey = RegExp.Regex.Replace(macroKey, @"\s+", "");
-
-                                        Console.WriteLine(macroKey + " IS FIRED");
-
-                                        SendKeys.SendWait("{" + macroKey + "}");
-
-                                        readyToClick = false;
-                                    }
-                                }
-                                else if (count_defects == 3 && macroComboBoxSelections[2] != null)
-                                {
-                                    if ((fingertipNames[0] == Finger.INDEX && fingertipNames[1] == Finger.MIDDLE && fingertipNames[2] == Finger.RING) || (fingertipNames[0] == Finger.RING && fingertipNames[1] == Finger.MIDDLE && fingertipNames[2] == Finger.INDEX))
-                                    {
-                                        /*IntPtr activeWindow = Native.GetForegroundWindow();
-                                        StringBuilder activeWindowText = new StringBuilder(512);
-                                        Native.GetWindowText(activeWindow, activeWindowText, 512);
-                                        string activeWindowTextString = activeWindowText.ToString();
-
-                                        IntPtr expectedWindow = IntPtr.Zero;
-                                        foreach (Process process in Process.GetProcesses())
-                                        {
-                                            if (process.MainWindowTitle.Contains(activeWindowTextString))
-                                                expectedWindow = process.MainWindowHandle;
-                                        }
-                                        if (expectedWindow != IntPtr.Zero)
-                                            Native.SetForegroundWindow(expectedWindow);
-
-                                        Console.WriteLine(activeWindowTextString);*/
-
-                                        string macroKey = macroComboBoxSelections[0].Replace("Key", "");
-                                        macroKey = RegExp.Regex.Replace(macroKey, @"\s+", "");
-
-                                        Console.WriteLine(macroKey + " IS FIRED");
-
-                                        SendKeys.SendWait("{" + macroKey + "}");
-
-                                        readyToClick = false;
-                                    }
-                                }
                             }
                         }
+                        */
                     }
                     else
                     {
@@ -973,13 +923,15 @@ namespace MoveCursorByHand.App_Code
 
                     frameRate = Math.Abs(1000 / milliSecondsDiff);
 
+                    if (firstFrameCaptured)
+                    {
+                        Action action = new Action(() => { captureImageBox.Visible = true; });
+                        captureImageBox.Invoke(action);
+                    }
+
                     if (!isActivated && firstFrameCaptured)
                     {
                         firstFrameCaptured = false;
-
-                        Action action = new Action(() => { captureImageBox.Visible = true; });
-                        captureImageBox.Invoke(action);
-                        
                         Thread.Sleep(100);
                     }
                     else
@@ -992,16 +944,17 @@ namespace MoveCursorByHand.App_Code
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.StackTrace);
+                Console.WriteLine(ex.Message);
             }
         }
+       
 
-        public int GetActiveDeviceIndex()
+        public int getActiveDeviceIndex()
         {
             return deviceIndex;
         }
 
-        public void SetFirstFrameCaptured(bool firstFrameCaptured)
+        public void setFirstFrameCaptured(bool firstFrameCaptured)
         {
             this.firstFrameCaptured = firstFrameCaptured;
         }
@@ -1047,6 +1000,68 @@ namespace MoveCursorByHand.App_Code
                 }));
             }
         }
+        /*
+        public void FindBoundary(RectangleF detectedRectangle, RectangleF bigRectangle)
+        {
+
+
+            int boundaryWidth = Math.Abs(((int)bigRectangle.Width - (int)detectedRectangle.Width) / 2);
+            int boundaryHeight = Math.Abs(((int)bigRectangle.Height - (int)detectedRectangle.Height) / 2);
+            int distanceX = Math.Abs((int)bigRectangle.X - (int)detectedRectangle.X);
+            int distanceY = Math.Abs((int)bigRectangle.Y - (int)detectedRectangle.Y);
+
+            Console.WriteLine(boundaryWidth + " , " + boundaryHeight + " , " + distanceX + " , " + distanceY);
+        }
+        */
+        public void MoveCursor(RectangleF detectedRectangle, RectangleF bigRectangle)
+        {
+            System.Drawing.Point p;
+            GetCursorPos(out p);
+            Rectangle rect = System.Windows.Forms.Screen.PrimaryScreen.Bounds;
+            
+            double heightRate = rect.Height / 400;
+            double widthRate = rect.Width / 560;
+
+            boundaryWidth = Math.Abs(((int)bigRectangle.Width - (int)detectedRectangle.Width) / 2);
+            boundaryHeight = Math.Abs(((int)bigRectangle.Height - (int)detectedRectangle.Height) / 2);
+            distanceX = Math.Abs((int)bigRectangleCenter.X - (int)detectedRectangleCenter.X);
+            distanceY = Math.Abs((int)bigRectangleCenter.Y - (int)detectedRectangleCenter.Y);
+            //   Console.WriteLine(boundaryWidth + " , " + boundaryHeight + " , " + distanceX + " , " + distanceY);
+
+            Console.WriteLine(bigRectangleCenter);
+            Console.WriteLine(detectedRectangleCenter);
+            if ((int)detectedRectangle.X != 0 || (int)detectedRectangle.Y != 0)
+            {
+                if (distanceX < boundaryWidth && distanceY < boundaryHeight)
+                {
+                    p.X = (int)bigRectangle.X * (int)widthRate;
+                    p.Y = (int)bigRectangle.Y * (int)heightRate;
+
+                    SetCursorPos(p.X, p.Y);
+
+                    bigRectangleCenter = new Point(p.X, p.Y);
+              //     detectedRectangleCenter = bigRectangleCenter;
+                    Console.WriteLine("In the Big Rectangle: p.X " + p.X + " p.Y " + p.Y);
+
+                }
+                else
+                {
+                    p.X = (int)detectedRectangle.X * (int)widthRate;
+                    p.Y = (int)detectedRectangle.Y * (int)heightRate;
+
+                    SetCursorPos(p.X, p.Y);
+                    //     Console.WriteLine((int)detectedRectangle.Height + " in normal " + (int)detectedRectangle.Width);
+                    Console.WriteLine("Out of Big Rectangle: p.X " + p.X + " p.Y " + p.Y);
+                    
+        //            detectedRectangleCenter = new Point(p.X, p.Y);
+                    bigRectangleCenter = new Point(p.X, p.Y);
+
+                    bigRectangle.X = detectedRectangle.X;
+                    bigRectangle.Y = detectedRectangle.Y;
+                }
+            }
+           
+        }
 
         public void ReleaseResources()
         {
@@ -1062,7 +1077,7 @@ namespace MoveCursorByHand.App_Code
             if (start == null)
             {
                 start = new Thread(() =>
-                {
+                {     
                     while (capture == null) ;
                     while (!canStartCamera) ;
                     captureInProgress = true;
@@ -1087,35 +1102,39 @@ namespace MoveCursorByHand.App_Code
 
         public void Pause()
         {
+            
             if (capture != null && canStartCamera)
             {
                 captureInProgress = false;
                 capture.Pause();
             }
+            
         }
 
         public void Stop()
         {
+            
             if (capture != null && canStartCamera)
             {
                 captureInProgress = false;
                 capture.Stop();
             }
+            
+        
         }
 
-        public bool IsActive()
+        public bool isActive()
         {
             return captureInProgress;
         }
 
-        public Size GetFrameSize()
+        public Size getFrameSize()
         {
             return new Size((int)width, (int)height);
         }
-
-        public void SetMacroComboBoxSelections(string[] macroComboBoxSelections)
-        {
-            this.macroComboBoxSelections = macroComboBoxSelections;
-        }
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out System.Drawing.Point lpPoint);
+        [DllImport("user32.dll")]
+        private static extern bool SetCursorPos(int X, int Y);
     }
 }
