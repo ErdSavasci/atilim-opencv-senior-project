@@ -47,11 +47,13 @@
             this.loadingGIFPictureBox = new System.Windows.Forms.PictureBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.handOverlayPictureBox = new System.Windows.Forms.PictureBox();
+            this.atilimLogoPictureBox = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.handOverlayPictureBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.atilimLogoPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
             // exitButton
@@ -264,14 +266,14 @@
             this.optionsPictureBox.TabIndex = 20;
             this.optionsPictureBox.TabStop = false;
             // 
-            // loadingGIFPicureBox
+            // loadingGIFPictureBox
             // 
             this.loadingGIFPictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
             this.loadingGIFPictureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
             this.loadingGIFPictureBox.Image = global::MoveCursorByHand.Properties.Resources.loading3;
             this.loadingGIFPictureBox.Location = new System.Drawing.Point(12, 73);
-            this.loadingGIFPictureBox.Name = "loadingGIFPicureBox";
+            this.loadingGIFPictureBox.Name = "loadingGIFPictureBox";
             this.loadingGIFPictureBox.Size = new System.Drawing.Size(397, 341);
             this.loadingGIFPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.loadingGIFPictureBox.TabIndex = 21;
@@ -293,11 +295,23 @@
             this.handOverlayPictureBox.TabStop = false;
             this.handOverlayPictureBox.Paint += new System.Windows.Forms.PaintEventHandler(this.handOverlayPictureBox_Paint);
             // 
+            // atilimLogoPictureBox
+            // 
+            this.atilimLogoPictureBox.BackColor = System.Drawing.Color.Transparent;
+            this.atilimLogoPictureBox.Image = global::MoveCursorByHand.Properties.Resources.atilim_logo2;
+            this.atilimLogoPictureBox.Location = new System.Drawing.Point(733, 24);
+            this.atilimLogoPictureBox.Name = "atilimLogoPictureBox";
+            this.atilimLogoPictureBox.Size = new System.Drawing.Size(39, 36);
+            this.atilimLogoPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.atilimLogoPictureBox.TabIndex = 23;
+            this.atilimLogoPictureBox.TabStop = false;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 461);
+            this.Controls.Add(this.atilimLogoPictureBox);
             this.Controls.Add(this.handOverlayPictureBox);
             this.Controls.Add(this.loadingGIFPictureBox);
             this.Controls.Add(this.rightRadioButton);
@@ -329,6 +343,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPictureBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.handOverlayPictureBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.atilimLogoPictureBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -354,6 +369,7 @@
         private System.Windows.Forms.PictureBox loadingGIFPictureBox;
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.PictureBox handOverlayPictureBox;
+        private System.Windows.Forms.PictureBox atilimLogoPictureBox;
     }
 }
 

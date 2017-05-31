@@ -123,6 +123,26 @@ namespace MoveCursorByHand.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
+        internal static System.Drawing.Bitmap atilim_logo {
+            get {
+                object obj = ResourceManager.GetObject("atilim_logo", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap atilim_logo2 {
+            get {
+                object obj = ResourceManager.GetObject("atilim_logo2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
         internal static System.Drawing.Bitmap background {
             get {
                 object obj = ResourceManager.GetObject("background", resourceCulture);
@@ -327,6 +347,16 @@ namespace MoveCursorByHand.Properties {
             get {
                 object obj = ResourceManager.GetObject("hand_overlay", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
+        /// </summary>
+        internal static System.Drawing.Icon hovercursor {
+            get {
+                object obj = ResourceManager.GetObject("hovercursor", resourceCulture);
+                return ((System.Drawing.Icon)(obj));
             }
         }
         

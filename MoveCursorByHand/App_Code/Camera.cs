@@ -84,6 +84,7 @@ namespace MoveCursorByHand.App_Code
         private RectangleF bigRectangle;
         private RectangleF detectedRectangle;
         private string[] macroComboBoxSelections;
+        private bool isOnce = true;
         #endregion
 
         public Camera(ImageBox captureImageBox, DsDevice systemCamera, int cameraIndex, PictureBox handOverlayPictureBox, PictureBox loadingGIFPicureBox, string[] macroComboBoxSelections)
@@ -508,9 +509,7 @@ namespace MoveCursorByHand.App_Code
                     CvInvoke.Erode(maskedCroppedFrame, maskedCroppedFrame, element, new Point(-1, -1), 1, BorderType.Default, new MCvScalar());
                     CvInvoke.BitwiseAnd(filteredCroppedFrame, filteredCroppedFrame, filteredCroppedFrame, maskedCroppedFrame);
 
-                    CvInvoke.CvtColor(filteredCroppedFrame, filteredCroppedFrame, ColorConversion.Bgr2Gray);
-                    //         frame = filteredCroppedFrame;
-                    //      captureImageBox.Image = filteredCroppedFrame;
+                    CvInvoke.CvtColor(filteredCroppedFrame, filteredCroppedFrame, ColorConversion.Bgr2Gray);                   
 
                     if (!isActivated)
                     {
@@ -570,25 +569,43 @@ namespace MoveCursorByHand.App_Code
 
                     if (handPalmClosedCount > 0)
                     {
+                        LPPoint initialPoint;
+                        Native.GetCursorPos(out initialPoint);
                         Rectangle detectedRect = detectedHaarCascadeRectangles.First();
 
                         if (!leftHandPos)
                             detectedRect.X = Math.Abs(croppedFrame.Width - detectedRect.X - detectedRect.Width);
+
                         CvInvoke.Rectangle(croppedFrame, detectedRect, new MCvScalar(255, 0, 0), 2);
                         Console.WriteLine(handPalmClosedCount + " Closed Hand Palm Found!!");
-                        Native.SetCursorPos(GetBigRectX(), GetBigRectY());
 
-                        //////////////////////////////////////////////////////////////////////
-                        detectedRectangle = new RectangleF(
-                                    detectedRect.X,
-                                    detectedRect.Y,
-                                    250,
-                                    250);
-                        SetBigRectSize((float)(detectedRect.Width * 1.5), (float)(detectedRect.Height * 1.5));
-                        SetDetectRextXY((int)detectedRectangle.X * 3, (int)detectedRectangle.Y * 3);
+                        if (isActivated)
+                        {
+                            if (x1 == -1 && y1 == -1 && Math.Abs(GetBigRectX() - initialPoint.X) <= 200 && Math.Abs(GetBigRectY() - initialPoint.Y) <= 200)
+                                Native.SetCursorPos(GetBigRectX(), GetBigRectY());
+                            else
+                                Native.SetCursorPos(GetBigRectX(), GetBigRectY());
 
-                        MoveCursor(detectedRectangle, bigRectangle);
-                        //////////////////////////////////
+                            //////////////////////////////////////////////////////////////////////
+                            detectedRectangle = new RectangleF(
+                                        detectedRect.X,
+                                        detectedRect.Y,
+                                        250,
+                                        250);
+
+                            SetBigRectSize((float)(detectedRectangle.Width * 1.5), (float)(detectedRectangle.Height * 1.5));
+                            SetDetectRextXY((int)detectedRectangle.X * 3, (int)detectedRectangle.Y * 3);
+
+                            MoveCursor(detectedRectangle, bigRectangle);
+                            //////////////////////////////////////////////////////////////////////
+                        }
+                    }
+                    else
+                    {
+                        x1 = -1;
+                        y1 = -1;
+                        x2 = -1;
+                        y2 = -1;
                     }
 
                     //THRESHOLD METHOD AND CONTOUR DETECTION
@@ -703,7 +720,7 @@ namespace MoveCursorByHand.App_Code
                         activate = false;
                     }
 
-                    //MOUSE CONTROL WITH INDEX FINGER 
+                    //KEYBOARD CONTROL VIA MACRO KEYS
                     if (isActivated)
                     {
                         if (handPalmClosedCount > 0)
@@ -907,9 +924,14 @@ namespace MoveCursorByHand.App_Code
             LPPoint p;
             Native.GetCursorPos(out p);
 
+            int initialX = p.X;
+            int initialY = p.Y;
+
             Console.WriteLine("Big Rectangle:      " + GetBigRectX() + " , " + GetBigRectY());
             Console.WriteLine("Detected Rectangle: " + detectedRectangle);
             FindBoundary(detectedRectangle, bigRectangle);
+
+            ScreenProperties screenProperties = new ScreenProperties();
 
             Console.WriteLine(distanceX + " , " + distanceY + " , " + boundaryWidth + " , " + boundaryHeight + "\n");
 
@@ -920,7 +942,10 @@ namespace MoveCursorByHand.App_Code
                     p.X = GetBigRectX();
                     p.Y = GetBigRectY();
 
-                    Native.SetCursorPos(p.X, p.Y);
+                    if (x1 == -1 && y1 == -1 && Math.Abs(p.X - initialX) <= 200 && Math.Abs(p.Y - initialY) <= 200)
+                        Native.SetCursorPos(p.X, p.Y);
+                    else
+                        Native.SetCursorPos(p.X, p.Y);
 
                     Console.WriteLine("In the Rectangle " + bigRectangle);
                 }
@@ -929,10 +954,16 @@ namespace MoveCursorByHand.App_Code
                     p.X = GetDetectedRectX();
                     p.Y = GetDetectedRectY();
 
-                    Native.SetCursorPos(p.X, p.Y);
+                    if (x1 == -1 && y1 == -1 && Math.Abs(p.X - initialX) <= 200 && Math.Abs(p.Y - initialY) <= 200)
+                        Native.SetCursorPos(p.X, p.Y);
+                    else
+                        Native.SetCursorPos(p.X, p.Y);
 
-                    SetBigRectXY(p.X, p.Y);
+                    SetBigRectXY(p.X, p.Y);                   
                 }
+
+                x1 = p.X;
+                y1 = p.Y;
             }
         }
 

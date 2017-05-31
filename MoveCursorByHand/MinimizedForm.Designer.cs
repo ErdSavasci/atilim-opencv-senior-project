@@ -29,7 +29,6 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MinimizedForm));
             this.returnPictureBox = new System.Windows.Forms.PictureBox();
             this.captureImageBoxMinimized = new Emgu.CV.UI.ImageBox();
             this.exitButton = new MaterialSkin.Controls.MaterialRaisedButton();
@@ -81,7 +80,6 @@
             // notifyIcon
             // 
             this.notifyIcon.BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info;
-            this.notifyIcon.Icon = ((System.Drawing.Icon)(resources.GetObject("notifyIcon.Icon")));
             this.notifyIcon.Text = "notifyIcon";
             // 
             // MinimizedForm

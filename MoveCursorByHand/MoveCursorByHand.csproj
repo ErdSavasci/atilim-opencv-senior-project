@@ -207,6 +207,7 @@
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
+    <None Include="Resources\hovercursor.ico" />
     <None Include="Resources\loading3.gif" />
     <None Include="Resources\hand.png" />
     <None Include="Resources\grayscale_hand.png" />
@@ -221,6 +222,8 @@
     <None Include="Resources\banner-67.jpeg" />
     <EmbeddedResource Include="aGest.xml" />
     <Content Include="App_Code\BackupCodes.txt" />
+    <None Include="atilim_logo.png" />
+    <None Include="atilim_logo2.png" />
     <Content Include="opencv_ffmpeg310.dll" />
     <Content Include="opencv_ffmpeg310_64.dll" />
     <None Include="Resources\background3.jpg" />
