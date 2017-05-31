@@ -186,8 +186,7 @@ namespace MoveCursorByHand.Properties {
         ///    &lt;maxDepth&gt;1&lt;/maxDepth&gt;
         ///    &lt;maxWeakCount&gt;100&lt;/maxWeakCount&gt;&lt;/stageParams&gt;
         ///  &lt;featureParams&gt;
-        ///    &lt;maxCatCount&gt;0&lt;/maxCatCount&gt;
-        ///    &lt;fe [rest of string was truncated]&quot;;.
+        ///    &lt;maxCatCount&gt;0&lt;/maxCa [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string cascade {
             get {
@@ -216,8 +215,7 @@ namespace MoveCursorByHand.Properties {
         ///                &lt;_&gt;
         ///                  3 7 9 8 2.&lt;/_&gt;&lt;/rects&gt;
         ///              &lt;tilted&gt;0&lt;/tilted&gt;&lt;/feature&gt;
-        ///            &lt;threshold&gt;-0.0223442204296589&lt;/threshold&gt;
-        ///         [rest of string was truncated]&quot;;.
+        ///            &lt;threshold&gt;-0.0223442204296589&lt; [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string fist {
             get {
@@ -256,8 +254,7 @@ namespace MoveCursorByHand.Properties {
         ///                &lt;_&gt;
         ///                  3 7 9 8 2.&lt;/_&gt;&lt;/rects&gt;
         ///              &lt;tilted&gt;0&lt;/tilted&gt;&lt;/feature&gt;
-        ///            &lt;threshold&gt;-0.0223442204296589&lt;/threshold&gt;
-        ///         [rest of string was truncated]&quot;;.
+        ///            &lt;threshold&gt;-0.0223442204296589&lt; [rest of string was truncated]&quot;;.
         /// </summary>
         internal static string hand {
             get {
@@ -339,6 +336,16 @@ namespace MoveCursorByHand.Properties {
         internal static System.Drawing.Bitmap loading {
             get {
                 object obj = ResourceManager.GetObject("loading", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        internal static System.Drawing.Bitmap loading3 {
+            get {
+                object obj = ResourceManager.GetObject("loading3", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

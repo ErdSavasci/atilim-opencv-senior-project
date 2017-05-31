@@ -44,13 +44,13 @@
             this.label2 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.optionsPictureBox = new System.Windows.Forms.PictureBox();
-            this.loadingGIFPicureBox = new System.Windows.Forms.PictureBox();
+            this.loadingGIFPictureBox = new System.Windows.Forms.PictureBox();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.handOverlayPictureBox = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPicureBox)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPictureBox)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.handOverlayPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
@@ -266,16 +266,16 @@
             // 
             // loadingGIFPicureBox
             // 
-            this.loadingGIFPicureBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            this.loadingGIFPictureBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left)));
-            this.loadingGIFPicureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
-            this.loadingGIFPicureBox.Image = global::MoveCursorByHand.Properties.Resources.loading;
-            this.loadingGIFPicureBox.Location = new System.Drawing.Point(12, 73);
-            this.loadingGIFPicureBox.Name = "loadingGIFPicureBox";
-            this.loadingGIFPicureBox.Size = new System.Drawing.Size(397, 341);
-            this.loadingGIFPicureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.loadingGIFPicureBox.TabIndex = 21;
-            this.loadingGIFPicureBox.TabStop = false;
+            this.loadingGIFPictureBox.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom;
+            this.loadingGIFPictureBox.Image = global::MoveCursorByHand.Properties.Resources.loading3;
+            this.loadingGIFPictureBox.Location = new System.Drawing.Point(12, 73);
+            this.loadingGIFPictureBox.Name = "loadingGIFPicureBox";
+            this.loadingGIFPictureBox.Size = new System.Drawing.Size(397, 341);
+            this.loadingGIFPictureBox.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
+            this.loadingGIFPictureBox.TabIndex = 21;
+            this.loadingGIFPictureBox.TabStop = false;
             // 
             // timer1
             // 
@@ -299,7 +299,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 461);
             this.Controls.Add(this.handOverlayPictureBox);
-            this.Controls.Add(this.loadingGIFPicureBox);
+            this.Controls.Add(this.loadingGIFPictureBox);
             this.Controls.Add(this.rightRadioButton);
             this.Controls.Add(this.leftRadioButton);
             this.Controls.Add(this.optionsPictureBox);
@@ -327,7 +327,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.captureImageBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.backgroundPictureBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.optionsPictureBox)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPicureBox)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.loadingGIFPictureBox)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.handOverlayPictureBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -351,7 +351,7 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.PictureBox optionsPictureBox;
-        private System.Windows.Forms.PictureBox loadingGIFPicureBox;
+        private System.Windows.Forms.PictureBox loadingGIFPictureBox;
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.PictureBox handOverlayPictureBox;
     }

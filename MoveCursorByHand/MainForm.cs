@@ -41,9 +41,9 @@ namespace MoveCursorByHand
         {
             captureImageBox.Tag = "Main_Capture";
             context = SynchronizationContext.Current;
-            loadingGIFPicureBox.Visible = false;
-            loadingGIFPicureBox.Size = new Size(captureImageBox.Width, captureImageBox.Height);
-            loadingGIFPicureBox.Location = new Point(captureImageBox.Location.X, captureImageBox.Location.Y);
+            loadingGIFPictureBox.Visible = false;
+            loadingGIFPictureBox.Size = new Size(captureImageBox.Width, captureImageBox.Height);
+            loadingGIFPictureBox.Location = new Point(captureImageBox.Location.X, captureImageBox.Location.Y);
 
             backgroundPictureBox.Image = Properties.Resources.background4;
             backgroundPictureBox.SizeMode = PictureBoxSizeMode.StretchImage;
@@ -121,7 +121,7 @@ namespace MoveCursorByHand
             captureImageBox.Width = (int)(Width / 1.81);
 
             captureImageBox.Visible = false;
-            loadingGIFPicureBox.Visible = true;
+            loadingGIFPictureBox.Visible = true;
 
             //Fills the listview elements with video capture device names
             int cameraIndex = -1;
@@ -133,7 +133,7 @@ namespace MoveCursorByHand
                 cameraIndex = 0;
             }
 
-            camera = new Camera(captureImageBox, devices.First(), cameraIndex, handOverlayPictureBox, loadingGIFPicureBox, new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
+            camera = new Camera(captureImageBox, devices.First(), cameraIndex, handOverlayPictureBox, loadingGIFPictureBox, new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
             camera.Start();
 
             handOverlayThread = new Thread(() =>
@@ -233,7 +233,7 @@ namespace MoveCursorByHand
                 MakeTransparent(label3);
                 MakeTransparent(metroLink);
                 MakeTransparent(availableCamerasListView);
-                MakeTransparent(loadingGIFPicureBox);
+                MakeTransparent(loadingGIFPictureBox);
                 normalTransparent = false;
                 maximizedTransparent = true;
             }
@@ -244,7 +244,7 @@ namespace MoveCursorByHand
                 MakeTransparent(label3);
                 MakeTransparent(metroLink);
                 MakeTransparent(availableCamerasListView);
-                MakeTransparent(loadingGIFPicureBox);
+                MakeTransparent(loadingGIFPictureBox);
                 normalTransparent = true;
                 maximizedTransparent = false;
             }
@@ -433,32 +433,46 @@ namespace MoveCursorByHand
 
             if (devices.Count() > 1 && camera.GetActiveDeviceIndex() != e.ItemIndex)
             {
-                loadingGIFPicureBox.Tag = e.ItemIndex;
-                loadingGIFPicureBox.Visible = true;
+                SetLoadingAnimationPictureBox(e.ItemIndex);
                 timer1.Start();
             }
         }
 
-        public void clearLoadingAnimationPictureBox()
+        public void ClearLoadingAnimationPictureBox()
         {
             Thread clearThread = new Thread(() =>
             {
                 Action clearImageAction = () =>
                 {
-                    loadingGIFPicureBox.Visible = false;
-                    loadingGIFPicureBox.Image = null;
+                    loadingGIFPictureBox.Visible = false;
+                    loadingGIFPictureBox.Image = null;
                 };
-                loadingGIFPicureBox.Invoke(clearImageAction);
+                loadingGIFPictureBox.Invoke(clearImageAction);
             });
             clearThread.IsBackground = true;
             clearThread.Start();
+        }
+
+        public void SetLoadingAnimationPictureBox(int itemIndex)
+        {
+            Thread setThread = new Thread(() =>
+            {
+                Action setImageAction = () =>
+                {
+                    loadingGIFPictureBox.Tag = itemIndex;
+                    loadingGIFPictureBox.Image = Properties.Resources.hand_overlay;
+                    loadingGIFPictureBox.Visible = true;
+                };
+                loadingGIFPictureBox.Invoke(setImageAction);
+            });
+            setThread.IsBackground = true;
+            setThread.Start();
         }
 
         private void handOverlayPictureBox_Paint(object sender, PaintEventArgs e)
         {
             Image handOverlayBitmap = ((PictureBox)sender).Image;
             Graphics graphics = Graphics.FromImage(handOverlayBitmap);
-
         }
 
         private void MainForm_Shown(object sender, EventArgs e)
@@ -492,7 +506,7 @@ namespace MoveCursorByHand
             }
 
             Devices devices = new Devices();
-            camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPicureBox.Tag), (int)loadingGIFPicureBox.Tag, handOverlayPictureBox, loadingGIFPicureBox, new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
+            camera = new Camera(captureImageBox, devices.ElementAt((int)loadingGIFPictureBox.Tag), (int)loadingGIFPictureBox.Tag, handOverlayPictureBox, loadingGIFPictureBox, new[] { macroComboBox.SelectedIndex != -1 ? (string)macroComboBox.SelectedItem : null, macroComboBox2.SelectedIndex != -1 ? (string)macroComboBox2.SelectedItem : null, macroComboBox3.SelectedIndex != -1 ? (string)macroComboBox3.SelectedItem : null });
             SetCamera(camera);
         }
     }
