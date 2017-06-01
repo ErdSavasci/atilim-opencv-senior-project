@@ -18,6 +18,7 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Reflection;
 using Accord.Extensions.Imaging.Algorithms.LINE2D;
+using RegExp = System.Text.RegularExpressions;
 
 namespace MoveCursorByHand.App_Code
 {
@@ -769,6 +770,64 @@ namespace MoveCursorByHand.App_Code
                                 }
 
                                 readyToClick = false;
+                            }
+                            else if (count_defects == 1 && macroComboBoxSelections[0] != null)
+                            {
+                                if (fingertipNames[0] == Finger.INDEX)
+                                {
+                                    /*IntPtr activeWindow = Native.GetForegroundWindow();
+                                    StringBuilder activeWindowText = new StringBuilder(512);
+                                    Native.GetWindowText(activeWindow, activeWindowText, 512);
+                                    string activeWindowTextString = activeWindowText.ToString();
+
+                                    IntPtr expectedWindow = IntPtr.Zero;
+                                    foreach (Process process in Process.GetProcesses())
+                                    {
+                                        if (process.MainWindowTitle.Contains(activeWindowTextString))
+                                            expectedWindow = process.MainWindowHandle;
+                                    }
+                                    if (expectedWindow != IntPtr.Zero)
+                                        Native.SetForegroundWindow(expectedWindow);
+
+                                    Console.WriteLine(activeWindowTextString);*/
+
+                                    string macroKey = macroComboBoxSelections[0].Replace("Key", "");
+                                    macroKey = RegExp.Regex.Replace(macroKey, @"\s+", "");
+
+                                    Console.WriteLine(macroKey + " IS FIRED");
+
+                                    SendKeys.SendWait("{" + macroKey + "}");
+
+                                    readyToClick = false;
+                                }
+                            }
+                            else if (count_defects == 2 && macroComboBoxSelections[1] != null)
+                            {
+                                if ((fingertipNames[0] == Finger.INDEX && fingertipNames[1] == Finger.MIDDLE) || (fingertipNames[0] == Finger.MIDDLE && fingertipNames[1] == Finger.INDEX))
+                                {
+                                    string macroKey = macroComboBoxSelections[1].Replace("Key", "");
+                                    macroKey = RegExp.Regex.Replace(macroKey, @"\s+", "");
+
+                                    Console.WriteLine(macroKey + " IS FIRED");
+
+                                    SendKeys.SendWait("{" + macroKey + "}");
+
+                                    readyToClick = false;
+                                }
+                            }
+                            else if (count_defects == 3 && macroComboBoxSelections[2] != null)
+                            {
+                                if ((fingertipNames[0] == Finger.INDEX && fingertipNames[1] == Finger.MIDDLE && fingertipNames[2] == Finger.RING) || (fingertipNames[0] == Finger.RING && fingertipNames[1] == Finger.MIDDLE && fingertipNames[2] == Finger.INDEX))
+                                {
+                                    string macroKey = macroComboBoxSelections[2].Replace("Key", "");
+                                    macroKey = RegExp.Regex.Replace(macroKey, @"\s+", "");
+
+                                    Console.WriteLine(macroKey + " IS FIRED");
+
+                                    SendKeys.SendWait("{" + macroKey + "}");
+
+                                    readyToClick = false;
+                                }
                             }
                         }
                     }
