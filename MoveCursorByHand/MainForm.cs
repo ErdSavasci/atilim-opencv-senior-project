@@ -460,7 +460,7 @@ namespace MoveCursorByHand
                 Action setImageAction = () =>
                 {
                     loadingGIFPictureBox.Tag = itemIndex;
-                    loadingGIFPictureBox.Image = Properties.Resources.hand_overlay;
+                    loadingGIFPictureBox.Image = Properties.Resources.loading3;
                     loadingGIFPictureBox.Visible = true;
                 };
                 loadingGIFPictureBox.Invoke(setImageAction);
